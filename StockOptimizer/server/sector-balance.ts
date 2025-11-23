@@ -205,7 +205,7 @@ export function getTargetSectorAdjustments(
                 check.status === 'SOFT_WARNING' ? 'medium' : 'low';
 
         if (check.rule === 1 && check.sector) {
-            // Single sector too high
+            // Rule 1: Single sector too high
             const current = sectorMap.get(check.sector) || 0;
             const target = 30; // Target 30% for overweight sectors
             adjustments[check.sector] = {
@@ -214,8 +214,23 @@ export function getTargetSectorAdjustments(
                 delta: target - current,
                 priority
             };
+        } else if (check.rule === 2 && check.members) {
+            // Rule 2: Correlated groups too high - reduce all members proportionally
+            check.members.forEach(sector => {
+                if (!adjustments[sector]) {
+                    const current = sectorMap.get(sector) || 0;
+                    // Reduce each member by a proportional amount
+                    const target = Math.max(current * 0.7, 15); // Reduce by 30% but keep at least 15%
+                    adjustments[sector] = {
+                        current,
+                        target,
+                        delta: target - current,
+                        priority
+                    };
+                }
+            });
         } else if (check.rule === 3) {
-            // Defensive sectors too low
+            // Rule 3: Defensive sectors too low - increase each
             DEFENSIVE_SECTORS.forEach(sector => {
                 if (!adjustments[sector]) {
                     const current = sectorMap.get(sector) || 0;
@@ -230,6 +245,39 @@ export function getTargetSectorAdjustments(
                     }
                 }
             });
+        } else if (check.rule === 4) {
+            // Rule 4: REITs too high - reduce Real Estate allocation
+            const current = sectorMap.get('Real Estate') || 0;
+            if (current > 15) {
+                adjustments['Real Estate'] = {
+                    current,
+                    target: 15,
+                    delta: 15 - current,
+                    priority
+                };
+            }
+        } else if (check.rule === 5) {
+            // Rule 5: Energy + Materials too high - reduce both
+            const energyCurrent = sectorMap.get('Energy') || 0;
+            const materialsCurrent = sectorMap.get('Materials') || 0;
+
+            if (energyCurrent > 0 && !adjustments['Energy']) {
+                adjustments['Energy'] = {
+                    current: energyCurrent,
+                    target: Math.min(energyCurrent, 12),
+                    delta: Math.min(energyCurrent, 12) - energyCurrent,
+                    priority
+                };
+            }
+
+            if (materialsCurrent > 0 && !adjustments['Materials']) {
+                adjustments['Materials'] = {
+                    current: materialsCurrent,
+                    target: Math.min(materialsCurrent, 12),
+                    delta: Math.min(materialsCurrent, 12) - materialsCurrent,
+                    priority
+                };
+            }
         }
     });
 

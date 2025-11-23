@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ArrowRight, TrendingUp, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, TrendingUp, CheckCircle2, XCircle, Activity } from "lucide-react";
 import { type OptimizationResult, type PortfolioInput } from "@shared/schema";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,9 +24,19 @@ export default function OptimizationResults() {
     const stored = localStorage.getItem("portfolio-input");
     if (stored) {
       const input = JSON.parse(stored);
-      setPortfolioInput(input);
+
+      // Read the sector rebalancing flag from localStorage
+      const enableRebalancing = localStorage.getItem('enableSectorRebalancing') === 'true';
+
+      // Add the rebalanceSectors flag to the input
+      const inputWithRebalancing = {
+        ...input,
+        rebalanceSectors: enableRebalancing
+      };
+
+      setPortfolioInput(inputWithRebalancing);
       if (!optimizeMutation.data && !optimizeMutation.isPending) {
-        optimizeMutation.mutate(input);
+        optimizeMutation.mutate(inputWithRebalancing);
       }
     } else {
       setLocation("/");
@@ -132,6 +142,114 @@ export default function OptimizationResults() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Sector Balance Comparison - only show if rebalancing was applied */}
+        {result.sectorRebalancingApplied && result.currentSectorBalance && result.optimized.sectorBalanceReport && (
+          <Card className="mb-8 border-2 border-blue-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-blue-500" />
+                섹터 리밸런싱 결과
+              </CardTitle>
+              <CardDescription>
+                섹터 밸런스 개선을 위한 조정이 적용되었습니다
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Current Sector Balance */}
+                <div className="space-y-3">
+                  <div className="font-semibold text-sm text-muted-foreground">현재 포트폴리오</div>
+                  <div className="text-center p-4 rounded-lg bg-muted">
+                    <div className="text-sm text-muted-foreground mb-1">섹터 밸런스 점수</div>
+                    <div className={`text-3xl font-bold ${result.currentSectorBalance.overallScore >= 80 ? 'text-green-600' : result.currentSectorBalance.overallScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {result.currentSectorBalance.overallScore}/100
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      위반: {result.currentSectorBalance.hardViolations}, 경고: {result.currentSectorBalance.softWarnings}
+                    </div>
+                  </div>
+                  {result.current.sectorDistribution && result.current.sectorDistribution.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-muted-foreground">섹터 분포</div>
+                      {result.current.sectorDistribution.slice(0, 5).map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span>{item.sector}</span>
+                          <span className="font-mono">{item.allocation.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Optimized Sector Balance */}
+                <div className="space-y-3">
+                  <div className="font-semibold text-sm text-muted-foreground">최적화 포트폴리오</div>
+                  <div className="text-center p-4 rounded-lg bg-blue-50 border-2 border-blue-200">
+                    <div className="text-sm text-muted-foreground mb-1">섹터 밸런스 점수</div>
+                    <div className={`text-3xl font-bold ${result.optimized.sectorBalanceReport.overallScore >= 80 ? 'text-green-600' : result.optimized.sectorBalanceReport.overallScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {result.optimized.sectorBalanceReport.overallScore}/100
+                    </div>
+                    <div className="text-xs text-blue-700 mt-2">
+                      위반: {result.optimized.sectorBalanceReport.hardViolations}, 경고: {result.optimized.sectorBalanceReport.softWarnings}
+                    </div>
+                    {result.optimized.sectorBalanceReport.overallScore > result.currentSectorBalance.overallScore && (
+                      <Badge className="mt-2 bg-green-600">
+                        +{(result.optimized.sectorBalanceReport.overallScore - result.currentSectorBalance.overallScore).toFixed(0)} 개선
+                      </Badge>
+                    )}
+                  </div>
+                  {result.optimized.sectorDistribution && result.optimized.sectorDistribution.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-muted-foreground">섹터 분포</div>
+                      {result.optimized.sectorDistribution.slice(0, 5).map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span>{item.sector}</span>
+                          <span className="font-mono">{item.allocation.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sector Balance Issues */}
+              {result.optimized.sectorBalanceReport.checks.filter(c => c.status !== 'OK').length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold">최적화 후 남은 이슈</div>
+                  {result.optimized.sectorBalanceReport.checks
+                    .filter(c => c.status !== 'OK')
+                    .map((check, idx) => {
+                      let bgColor = 'bg-green-50 border-green-200';
+                      let textColor = 'text-green-800';
+                      let icon = '✓';
+
+                      if (check.status === 'HARD_VIOLATION') {
+                        bgColor = 'bg-red-50 border-red-200';
+                        textColor = 'text-red-800';
+                        icon = '✗';
+                      } else if (check.status === 'SOFT_WARNING') {
+                        bgColor = 'bg-yellow-50 border-yellow-200';
+                        textColor = 'text-yellow-800';
+                        icon = '⚠';
+                      } else if (check.status === 'ADVISORY') {
+                        bgColor = 'bg-blue-50 border-blue-200';
+                        textColor = 'text-blue-800';
+                        icon = 'ℹ';
+                      }
+
+                      return (
+                        <div key={idx} className={`p-2 rounded border text-xs ${bgColor} ${textColor}`}>
+                          <span className="mr-2">{icon}</span>
+                          {check.message}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card>

@@ -113,6 +113,8 @@ export interface OptimizationResult {
   optimized: {
     metrics: PerformanceMetrics;
     holdings: OptimizedHolding[];
+    sectorDistribution?: SectorDistribution[];
+    sectorBalanceReport?: SectorBalanceReport;
   };
   recommendations: {
     action: string;
@@ -128,4 +130,6 @@ export interface OptimizationResult {
     isOptimal?: boolean;
     isCurrent?: boolean;
   }[];
+  sectorRebalancingApplied?: boolean;
+  currentSectorBalance?: SectorBalanceReport;
 }

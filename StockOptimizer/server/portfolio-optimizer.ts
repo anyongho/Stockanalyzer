@@ -137,11 +137,14 @@ export function optimizePortfolio(
 
   // Check if sector rebalancing is enabled
   if (input.rebalanceSectors) {
+    console.log('🔄 SECTOR REBALANCING ENABLED');
     sectorBalanceBefore = checkSectorBalance(currentHoldings);
 
     // Only apply rebalancing if there are violations or warnings
     if (sectorBalanceBefore.hardViolations > 0 || sectorBalanceBefore.softWarnings > 0) {
+      console.log(`⚠️  Found ${sectorBalanceBefore.hardViolations} hard violations and ${sectorBalanceBefore.softWarnings} soft warnings`);
       targetAdjustments = getTargetSectorAdjustments(sectorBalanceBefore, currentHoldings);
+      console.log('📊 Target sector adjustments:', targetAdjustments);
 
       // Expand ticker pool with stocks from underweight sectors
       const sectorStockPool = getSectorStockPool();
@@ -156,13 +159,19 @@ export function optimizePortfolio(
             .filter(t => !currentTickers.has(t) && alignedData.has(t))
             .slice(0, 3); // Add up to 3 new stocks per underweight sector
           additionalTickers.push(...newStocks);
+          console.log(`  ➕ Adding stocks for ${sector}: ${newStocks.join(', ')}`);
         }
       });
 
       if (additionalTickers.length > 0) {
         tickers = [...tickers, ...additionalTickers];
+        console.log(`✅ Expanded ticker pool by ${additionalTickers.length} stocks`);
       }
+    } else {
+      console.log('✅ No sector violations found - sector balance is good');
     }
+  } else {
+    console.log('❌ Sector rebalancing is DISABLED');
   }
 
   const candidates: PortfolioCandidate[] = [];
@@ -173,7 +182,7 @@ export function optimizePortfolio(
 
     // Use sector-balanced generation if rebalancing is enabled and we have adjustments
     if (input.rebalanceSectors && Object.keys(targetAdjustments).length > 0) {
-      candidateHoldings = generateSectorBalancedPortfolio(tickers, targetAdjustments, 0.5);
+      candidateHoldings = generateSectorBalancedPortfolio(tickers, targetAdjustments, 0.8);
     } else {
       candidateHoldings = generateRandomPortfolio(tickers);
     }
@@ -191,19 +200,26 @@ export function optimizePortfolio(
 
   let bestCandidate: PortfolioCandidate;
 
-  // If sector rebalancing is enabled, use combined scoring
+  // If sector rebalancing is enabled, use combined scoring with sector balance as TOP priority
   if (input.rebalanceSectors && Object.keys(targetAdjustments).length > 0) {
     const scoredCandidates = candidates.map(c => {
       const sectorReport = checkSectorBalance(c.holdings);
       const sectorScore = sectorReport.overallScore / 100; // Normalize to 0-1
-      const performanceScore = c.metrics.sharpeRatio / 3; // Normalize (assume max ~3)
-      const combinedScore = performanceScore * 0.6 + sectorScore * 0.4;
+      const performanceScore = Math.min(c.metrics.sharpeRatio / 3, 1); // Normalize and cap at 1
 
-      return { ...c, combinedScore, sectorScore };
+      // SECTOR BALANCE IS TOP PRIORITY: 80% sector, 20% performance
+      const combinedScore = sectorScore * 0.8 + performanceScore * 0.2;
+
+      return { ...c, combinedScore, sectorScore, performanceScore };
     });
 
     scoredCandidates.sort((a, b) => b.combinedScore - a.combinedScore);
     bestCandidate = scoredCandidates[0];
+
+    console.log('Sector Rebalancing ENABLED - Top 3 candidates:');
+    scoredCandidates.slice(0, 3).forEach((c, i) => {
+      console.log(`  ${i + 1}. Combined: ${c.combinedScore.toFixed(3)}, Sector: ${c.sectorScore.toFixed(3)}, Performance: ${c.performanceScore.toFixed(3)}`);
+    });
   } else {
     // Original selection logic
     if (input.riskTolerance === "conservative") {
@@ -252,15 +268,39 @@ export function optimizePortfolio(
     bestCandidate.metrics
   );
 
+
+  // Calculate sector distribution and balance for optimized portfolio
+  const optimizedSectorDist = calculateSectorDistribution(bestCandidate.holdings);
+  const optimizedSectorBalance = checkSectorBalance(bestCandidate.holdings);
+
   return {
     current: currentAnalysis,
     optimized: {
       metrics: bestCandidate.metrics,
       holdings: optimizedHoldings,
+      sectorDistribution: optimizedSectorDist,
+      sectorBalanceReport: optimizedSectorBalance,
     },
     recommendations,
     efficientFrontier,
+    sectorRebalancingApplied: input.rebalanceSectors && Object.keys(targetAdjustments).length > 0,
+    currentSectorBalance: sectorBalanceBefore,
   };
+}
+
+function calculateSectorDistribution(holdings: PortfolioHolding[]): { sector: string; allocation: number }[] {
+  const sectorMap = new Map<string, number>();
+
+  for (const holding of holdings) {
+    const details = stockCache.getCompanyDetails(holding.ticker);
+    const sector = details?.sector || "Unknown";
+    const current = sectorMap.get(sector) || 0;
+    sectorMap.set(sector, current + holding.allocation);
+  }
+
+  return Array.from(sectorMap.entries())
+    .map(([sector, allocation]) => ({ sector, allocation }))
+    .sort((a, b) => b.allocation - a.allocation);
 }
 
 function generateRecommendations(
