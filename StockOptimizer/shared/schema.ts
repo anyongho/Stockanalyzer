@@ -19,7 +19,7 @@ export type User = typeof users.$inferSelect;
 
 export const portfolioHoldingSchema = z.object({
   ticker: z.string().min(1, "Ticker is required").toUpperCase(),
-  allocation: z.number().min(0.01, "Allocation must be at least 0.01%").max(100, "Allocation cannot exceed 100%"),
+  allocation: z.number().min(0, "Allocation must be positive"),
 });
 
 export type PortfolioHolding = z.infer<typeof portfolioHoldingSchema>;
@@ -28,6 +28,7 @@ export const portfolioInputSchema = z.object({
   holdings: z.array(portfolioHoldingSchema).min(1, "At least one holding is required"),
   targetReturn: z.number().min(1).max(100).optional(),
   riskTolerance: z.enum(["conservative", "moderate", "aggressive"]),
+  rebalanceSectors: z.boolean().optional(),
 });
 
 export type PortfolioInput = z.infer<typeof portfolioInputSchema>;
@@ -56,11 +57,39 @@ export interface PerformanceMetrics {
   worstYear: number;
   positiveYears: number;
   negativeYears: number;
+  sortinoRatio: number;
+  downsideDeviation: number;
+  beta: number;
+  alpha: number;
+  informationRatio: number;
+  trackingError: number;
+  rSquare: number;
 }
 
 export interface YearlyReturn {
   year: number;
   return: number;
+}
+
+export interface SectorDistribution {
+  sector: string;
+  allocation: number;
+}
+
+export interface SectorBalanceCheck {
+  rule: number;
+  status: 'OK' | 'ADVISORY' | 'SOFT_WARNING' | 'HARD_VIOLATION';
+  sector?: string;
+  value: number;
+  message: string;
+  members?: string[];
+}
+
+export interface SectorBalanceReport {
+  checks: SectorBalanceCheck[];
+  hardViolations: number;
+  softWarnings: number;
+  overallScore: number;
 }
 
 export interface PortfolioAnalysis {
@@ -69,6 +98,7 @@ export interface PortfolioAnalysis {
   drawdowns: { date: string; drawdown: number }[];
   yearlyReturns: YearlyReturn[];
   holdings: PortfolioHolding[];
+  sectorDistribution: SectorDistribution[];
   startDate: string;
   endDate: string;
   periodYears: number;

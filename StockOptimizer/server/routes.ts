@@ -11,6 +11,32 @@ import { analyzePortfolio, calculatePortfolioValues, calculateMetrics, calculate
 import { optimizePortfolio } from "./portfolio-optimizer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.get("/api/tickers", async (_req, res) => {
+    try {
+      // Import stockCache dynamically to ensure it's initialized or we can access the instance
+      const { stockCache } = await import("./stock-data");
+
+      // Ensure cache is initialized
+      if (!stockCache.getAllTickers().length) {
+        await stockCache.initialize();
+      }
+
+      const companies = stockCache.getAllCompanyDetails();
+
+      // If we have company metadata, return it
+      if (companies.length > 0) {
+        return res.json({ companies });
+      }
+
+      // Fallback to just tickers if no metadata
+      const tickers = stockCache.getAllTickers().sort();
+      return res.json({ tickers: tickers.map(t => ({ ticker: t, name: t, description: "" })) });
+    } catch (error) {
+      console.error("Error fetching tickers:", error);
+      return res.status(500).json({ error: "Failed to fetch tickers" });
+    }
+  });
+
   app.post("/api/analyze", async (req, res) => {
     try {
       const validationResult = portfolioInputSchema.safeParse(req.body);
@@ -24,13 +50,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const input: PortfolioInput = validationResult.data;
       const BENCHMARK_TICKER = "^GSPC";
       const RF_TICKER = "^IRX";
-      const allTickers = [
-        ...new Set([
-          ...input.holdings.map((h) => h.ticker),
-          BENCHMARK_TICKER,
-          RF_TICKER,
-        ]),
-      ];
+      const allTickers = Array.from(new Set([
+        ...input.holdings.map((h) => h.ticker),
+        BENCHMARK_TICKER,
+        RF_TICKER,
+      ]));
 
       const stockDataMap = await fetchMultipleStocks(allTickers, 5);
 
@@ -75,11 +99,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (benchmarkValues.length === 0) {
         console.warn("Benchmark values are empty after calculation.");
       }
-     const rfData = stockDataMap.get(RF_TICKER);
-	
-      const benchmarkMetrics = calculateMetrics(benchmarkValues, years, rfData,benchmarkValues);
+      const rfData = stockDataMap.get(RF_TICKER);
 
-      const portfolioMetrics = calculateMetrics(portfolioValues, years, rfData,benchmarkValues);
+      const benchmarkMetrics = calculateMetrics(benchmarkValues, years, rfData, benchmarkValues);
+      const portfolioMetrics = calculateMetrics(portfolioValues, years, rfData, benchmarkValues);
+
+      // Use analyzePortfolio to get complete analysis including sectorDistribution
+      const portfolioAnalysis = analyzePortfolio(
+        alignedData,
+        input.holdings,
+        startDate,
+        endDate,
+        years,
+        rfData ? { prices: rfData.prices } : undefined,
+        benchmarkValues
+      );
 
       const chartData = [];
       for (let i = 0; i < portfolioValues.length; i++) {
@@ -93,6 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({
         success: true,
         analysis: {
+          ...portfolioAnalysis,
           portfolio: {
             values: portfolioValues,
             metrics: portfolioMetrics,
@@ -105,9 +140,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             yearlyReturns: calculateYearlyReturns(benchmarkValues),
           },
           chartData,
-          startDate,
-          endDate,
-          periodYears: years,
         }
       });
     } catch (error) {

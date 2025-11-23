@@ -1,9 +1,11 @@
+import { stockCache } from "./stock-data";
 import {
   type PortfolioHolding,
   type PortfolioAnalysis,
   type PerformanceMetrics,
   type YearlyReturn,
   type StockPrice,
+  type SectorDistribution,
 } from "@shared/schema";
 
 interface DailyPortfolioValue {
@@ -59,12 +61,12 @@ export function calculateRiskReturnMetrics(
     console.warn("Portfolio and benchmark length mismatch or too short", port.length, bench.length);
     return {};
   }
-console.log("Portfolio values length:", portfolioValues.length);
-console.log("Benchmark values length:", benchmarkValues.length);
+  console.log("Portfolio values length:", portfolioValues.length);
+  console.log("Benchmark values length:", benchmarkValues.length);
   const portRet = calculateDailyReturns(port);
   const benchRet = calculateDailyReturns(bench);
-console.log("Sample portfolio returns:", portRet.slice(0, 5));
-console.log("Sample benchmark returns:", benchRet.slice(0, 5));
+  console.log("Sample portfolio returns:", portRet.slice(0, 5));
+  console.log("Sample benchmark returns:", benchRet.slice(0, 5));
 
   if (portRet.length !== benchRet.length) {
     const len = Math.min(portRet.length, benchRet.length);
@@ -89,7 +91,7 @@ console.log("Sample benchmark returns:", benchRet.slice(0, 5));
   const covVal = cov(portRet, benchRet);
   console.log("Covariance:", covVal, "Variance:", varBench);
 
-console.log("Covariance:", covVal, "Benchmark Variance:", varBench);
+  console.log("Covariance:", covVal, "Benchmark Variance:", varBench);
 
   let beta = covVal / varBench;
 
@@ -107,14 +109,14 @@ console.log("Covariance:", covVal, "Benchmark Variance:", varBench);
   const trackingErrorStd = standardDeviation(trackingErrorVector);
   const trackingError = trackingErrorStd * Math.sqrt(252) * 100;
 
-  const informationRatio = trackingError > 0 
-    ? ((mean(portRet) - mean(benchRet)) * 252 * 100) / trackingError 
+  const informationRatio = trackingError > 0
+    ? ((mean(portRet) - mean(benchRet)) * 252 * 100) / trackingError
     : 0;
 
-  const rSquare = 
-    (varBench > 0 && variance(portRet) > 0) 
-    ? (covVal ** 2) / (varBench * variance(portRet)) 
-    : 0;
+  const rSquare =
+    (varBench > 0 && variance(portRet) > 0)
+      ? (covVal ** 2) / (varBench * variance(portRet))
+      : 0;
 
   console.log("Beta:", beta, "Alpha:", alpha, "Information Ratio:", informationRatio, "Tracking Error:", trackingError, "R²:", rSquare);
 
@@ -132,15 +134,15 @@ export function calculatePortfolioValues(
   holdings: PortfolioHolding[]
 ): DailyPortfolioValue[] {
   const allDates = new Set<string>();
-  for (const prices of alignedData.values()) {
-    prices.forEach((p) => allDates.add(p.date));
+  for (const prices of Array.from(alignedData.values())) {
+    prices.forEach((p: StockPrice) => allDates.add(p.date));
   }
   const sortedDates = Array.from(allDates).sort();
   const portfolioValues: DailyPortfolioValue[] = [];
   const initialValue = 10000;
 
   const initialPrices = new Map<string, number>();
-  for (const [ticker, prices] of alignedData.entries()) {
+  for (const [ticker, prices] of Array.from(alignedData.entries())) {
     if (prices.length > 0) initialPrices.set(ticker, prices[0].adjClose);
   }
 
@@ -171,7 +173,7 @@ export function calculatePortfolioValues(
 }
 
 export function calculateMetrics(
-	
+
   portfolioValues: DailyPortfolioValue[],
   years: number,
   rfData?: { prices: StockPrice[] },
@@ -240,8 +242,8 @@ export function calculateMetrics(
   const negativeYears = yearlyReturns.filter((yr) => yr.return <= 0).length;
 
   let beta = 0, alpha = 0, informationRatio = 0, trackingError = 0, rSquare = 0;
-console.log("PortfolioValues length:", portfolioValues.length);
-console.log("BenchmarkValues length:", benchmarkValues?.length);
+  console.log("PortfolioValues length:", portfolioValues.length);
+  console.log("BenchmarkValues length:", benchmarkValues?.length);
   if (benchmarkValues && benchmarkValues.length === portfolioValues.length) {
     const riskMetrics = calculateRiskReturnMetrics(portfolioValues, benchmarkValues, years, riskFreeRate);
     console.log("Risk metrics:", riskMetrics);
@@ -287,7 +289,7 @@ export function calculateYearlyReturns(
     }
   }
   const yearlyReturns: YearlyReturn[] = [];
-  for (const [year, { start, end }] of yearlyMap) {
+  for (const [year, { start, end }] of Array.from(yearlyMap)) {
     const ret = ((end - start) / start) * 100;
     yearlyReturns.push({ year, return: ret });
   }
@@ -307,6 +309,27 @@ export function calculateDrawdowns(
   return drawdowns;
 }
 
+export function calculateSectorDistribution(holdings: PortfolioHolding[]): SectorDistribution[] {
+  const sectorMap = new Map<string, number>();
+
+  console.log("Calculating sector distribution for holdings:", JSON.stringify(holdings));
+
+  for (const holding of holdings) {
+    const details = stockCache.getCompanyDetails(holding.ticker);
+    console.log(`Ticker: ${holding.ticker}, Details:`, details);
+    const sector = details?.sector || "Unknown";
+    const currentAllocation = sectorMap.get(sector) || 0;
+    sectorMap.set(sector, currentAllocation + holding.allocation);
+  }
+
+  const distribution = Array.from(sectorMap.entries())
+    .map(([sector, allocation]) => ({ sector, allocation }))
+    .sort((a, b) => b.allocation - a.allocation);
+
+  console.log("Calculated distribution:", JSON.stringify(distribution));
+  return distribution;
+}
+
 export function analyzePortfolio(
   alignedData: Map<string, StockPrice[]>,
   holdings: PortfolioHolding[],
@@ -320,6 +343,7 @@ export function analyzePortfolio(
   const metrics = calculateMetrics(portfolioValues, years, rfData, benchmarkValues);
   const yearlyReturns = calculateYearlyReturns(portfolioValues);
   const drawdowns = calculateDrawdowns(portfolioValues);
+  const sectorDistribution = calculateSectorDistribution(holdings);
 
   return {
     metrics,
@@ -327,6 +351,7 @@ export function analyzePortfolio(
     yearlyReturns,
     drawdowns,
     holdings,
+    sectorDistribution,
     startDate,
     endDate,
     periodYears: years,

@@ -71,7 +71,17 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '3000', 10);
+
+  // Initialize stock cache before listening
+  try {
+    const { stockCache } = await import("./stock-data");
+    await stockCache.initialize();
+  } catch (error) {
+    console.error("Failed to initialize stock cache:", error);
+    // Continue starting server even if cache fails, it will try to load on demand
+  }
+
   server.listen(port, () => {
-  log(`serving on http://localhost:${port}`);
-});
+    log(`serving on http://localhost:${port}`);
+  });
 })();
