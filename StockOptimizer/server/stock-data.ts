@@ -34,12 +34,12 @@ class StockCache {
   async initialize() {
     if (this.isInitialized) return;
 
-    console.log(`🟡 [Cache] Initializing stock data...`);
+
 
     // 1. Load Company Metadata
     if (fs.existsSync(COMPANIES_PATH)) {
       try {
-        console.log(`🟡 [Cache] Loading company metadata from ${COMPANIES_PATH}`);
+
         const workbook = XLSX.readFile(COMPANIES_PATH);
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const companies = XLSX.utils.sheet_to_json<any>(sheet);
@@ -61,7 +61,7 @@ class StockCache {
           };
           this.companyCache.set(details.ticker, details);
         }
-        console.log(`✅ [Cache] Loaded metadata for ${this.companyCache.size} companies`);
+
       } catch (error) {
         console.error("❌ [Cache] Failed to load company metadata:", error);
       }
@@ -77,7 +77,7 @@ class StockCache {
     try {
       const workbook = XLSX.readFile(EXCEL_PATH);
       const sheetNames = workbook.SheetNames;
-      console.log(`📊 [Cache] Found ${sheetNames.length} sheets in Excel file`);
+
 
       let loadedCount = 0;
       for (const sheetName of sheetNames) {
@@ -116,7 +116,7 @@ class StockCache {
       }
 
       this.isInitialized = true;
-      console.log(`✅ [Cache] Initialization complete. Loaded ${loadedCount} stocks.`);
+
     } catch (error) {
       console.error("❌ [Cache] Failed to initialize stock cache:", error);
       throw error;
@@ -143,9 +143,7 @@ class StockCache {
     return this.cache.has(ticker.toUpperCase());
   }
 
-  getAllTickers(): string[] {
-    return Array.from(this.cache.keys());
-  }
+
 }
 
 export const stockCache = new StockCache();
@@ -168,7 +166,7 @@ export async function fetchStockData(
     return data;
   }
 
-  console.warn(`⚠️ [Cache] Miss for ${ticker}`);
+
   return null;
 }
 
@@ -189,7 +187,7 @@ export async function fetchMultipleStocks(
   for (const ticker of tickers) {
     const result = await fetchStockData(ticker, years);
     if (result) results.set(ticker.toUpperCase(), result);
-    else console.warn(`⚠️ [Cache] ${ticker} not found in cache`);
+    else { }
   }
 
   // console.log(`📦 [Cache] Retrieved: ${results.size}/${tickers.length} stocks`);

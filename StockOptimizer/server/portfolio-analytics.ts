@@ -58,25 +58,21 @@ export function calculateRiskReturnMetrics(
   const port = portfolioValues.map(v => v.value);
   const bench = benchmarkValues.map(v => v.value);
   if (port.length < 2 || bench.length !== port.length) {
-    console.warn("Portfolio and benchmark length mismatch or too short", port.length, bench.length);
     return {};
   }
-  console.log("Portfolio values length:", portfolioValues.length);
-  console.log("Benchmark values length:", benchmarkValues.length);
+
   const portRet = calculateDailyReturns(port);
   const benchRet = calculateDailyReturns(bench);
-  console.log("Sample portfolio returns:", portRet.slice(0, 5));
-  console.log("Sample benchmark returns:", benchRet.slice(0, 5));
+
 
   if (portRet.length !== benchRet.length) {
     const len = Math.min(portRet.length, benchRet.length);
     portRet.splice(len);
     benchRet.splice(len);
-    console.warn("Aligned returns length", portRet.length, benchRet.length);
+
   }
 
-  console.log("Sample portfolio returns:", portRet.slice(0, 5));
-  console.log("Sample benchmark returns:", benchRet.slice(0, 5));
+
 
   const avgRf = rfAnnual / 100 / 252;
   const avgPort = mean(portRet);
@@ -84,19 +80,17 @@ export function calculateRiskReturnMetrics(
 
   const varBench = variance(benchRet);
   if (varBench === 0) {
-    console.warn("Variance of benchmark is zero!");
+
     return {};
   }
 
   const covVal = cov(portRet, benchRet);
-  console.log("Covariance:", covVal, "Variance:", varBench);
 
-  console.log("Covariance:", covVal, "Benchmark Variance:", varBench);
 
   let beta = covVal / varBench;
 
   if (!isFinite(beta)) {
-    console.warn("Beta calculation resulted in infinity or NaN");
+
     beta = 0;
   }
 
@@ -118,7 +112,7 @@ export function calculateRiskReturnMetrics(
       ? (covVal ** 2) / (varBench * variance(portRet))
       : 0;
 
-  console.log("Beta:", beta, "Alpha:", alpha, "Information Ratio:", informationRatio, "Tracking Error:", trackingError, "R²:", rSquare);
+
 
   return {
     beta,
@@ -242,18 +236,17 @@ export function calculateMetrics(
   const negativeYears = yearlyReturns.filter((yr) => yr.return <= 0).length;
 
   let beta = 0, alpha = 0, informationRatio = 0, trackingError = 0, rSquare = 0;
-  console.log("PortfolioValues length:", portfolioValues.length);
-  console.log("BenchmarkValues length:", benchmarkValues?.length);
+
   if (benchmarkValues && benchmarkValues.length === portfolioValues.length) {
     const riskMetrics = calculateRiskReturnMetrics(portfolioValues, benchmarkValues, years, riskFreeRate);
-    console.log("Risk metrics:", riskMetrics);
+
     beta = riskMetrics.beta || 0;
     alpha = riskMetrics.alpha || 0;
     informationRatio = riskMetrics.informationRatio || 0;
     trackingError = riskMetrics.trackingError || 0;
     rSquare = riskMetrics.rSquare || 0;
   } else {
-    console.warn("Benchmark and portfolio length mismatch", benchmarkValues?.length, portfolioValues.length);
+
   }
 
   return {
@@ -312,11 +305,11 @@ export function calculateDrawdowns(
 export function calculateSectorDistribution(holdings: PortfolioHolding[]): SectorDistribution[] {
   const sectorMap = new Map<string, number>();
 
-  console.log("Calculating sector distribution for holdings:", JSON.stringify(holdings));
+
 
   for (const holding of holdings) {
     const details = stockCache.getCompanyDetails(holding.ticker);
-    console.log(`Ticker: ${holding.ticker}, Details:`, details);
+
     const sector = details?.sector || "Unknown";
     const currentAllocation = sectorMap.get(sector) || 0;
     sectorMap.set(sector, currentAllocation + holding.allocation);
@@ -326,7 +319,7 @@ export function calculateSectorDistribution(holdings: PortfolioHolding[]): Secto
     .map(([sector, allocation]) => ({ sector, allocation }))
     .sort((a, b) => b.allocation - a.allocation);
 
-  console.log("Calculated distribution:", JSON.stringify(distribution));
+
   return distribution;
 }
 

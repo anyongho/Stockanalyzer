@@ -129,7 +129,10 @@ export interface OptimizationResult {
     return: number;
     isOptimal?: boolean;
     isCurrent?: boolean;
+    isSectorCompliant?: boolean;
   }[];
   sectorRebalancingApplied?: boolean;
   currentSectorBalance?: SectorBalanceReport;
+  sectorAdjustedHoldings?: PortfolioHolding[];
+  sectorBalancedPortfolio?: PortfolioAnalysis;
 }

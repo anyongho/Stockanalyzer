@@ -9,6 +9,7 @@ import {
 } from "./stock-data";
 import { analyzePortfolio, calculatePortfolioValues, calculateMetrics, calculateYearlyReturns } from "./portfolio-analytics";
 import { optimizePortfolio } from "./portfolio-optimizer";
+import { checkSectorBalance, applySectorBalanceAdjustments } from "./sector-balance";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tickers", async (_req, res) => {
@@ -58,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const stockDataMap = await fetchMultipleStocks(allTickers, 5);
 
-      console.log("Fetched stockDataMap ticker keys:", Array.from(stockDataMap.keys()));
+
 
       if (stockDataMap.size === 0) {
         return res.status(404).json({
@@ -82,20 +83,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const alignedData = alignStockDataToDateRange(stockDataMap, startDate, endDate);
 
-      console.log("AlignedData keys after alignment:", Array.from(alignedData.keys()));
-      if (!alignedData.has(BENCHMARK_TICKER)) {
-        console.warn(`Aligned data does not contain benchmark ticker: ${BENCHMARK_TICKER}`);
-      }
+
+
 
       const portfolioValues = calculatePortfolioValues(alignedData, input.holdings);
-      console.log("Portfolio values length:", portfolioValues.length);
+
 
       const benchmarkValues = calculatePortfolioValues(
         alignedData,
         [{ ticker: BENCHMARK_TICKER, allocation: 100 }]
       );
 
-      console.log("Benchmark values length:", benchmarkValues.length);
+
       if (benchmarkValues.length === 0) {
         console.warn("Benchmark values are empty after calculation.");
       }
@@ -124,6 +123,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Apply sector balance adjustments if enabled
+      let adjustedHoldings = undefined;
+      let sectorBalanceReport = undefined;
+
+      if (input.rebalanceSectors) {
+
+        sectorBalanceReport = checkSectorBalance(input.holdings);
+
+        if (sectorBalanceReport.hardViolations > 0 || sectorBalanceReport.softWarnings > 0) {
+
+          adjustedHoldings = applySectorBalanceAdjustments(input.holdings, sectorBalanceReport, alignedData);
+        } else {
+
+        }
+      }
+
       return res.json({
         success: true,
         analysis: {
@@ -140,6 +155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             yearlyReturns: calculateYearlyReturns(benchmarkValues),
           },
           chartData,
+          adjustedHoldings,
+          sectorBalanceReport,
         }
       });
     } catch (error) {
@@ -160,33 +177,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       const input: PortfolioInput = validationResult.data;
-      const tickers = input.holdings.map((h) => h.ticker);
+      // Use ALL available tickers for optimization to allow adding new stocks
+      // The stockCache is already initialized by fetchMultipleStocks if needed, 
+      // but let's make sure we get everything.
+      const { stockCache } = await import("./stock-data");
+      if (!stockCache.getAllTickers().length) {
+        await stockCache.initialize();
+      }
 
-      const stockDataMap = await fetchMultipleStocks(tickers, 5);
+      const allTickers = stockCache.getAllTickers();
+      const stockDataMap = await fetchMultipleStocks(allTickers, 5);
 
       if (stockDataMap.size === 0) {
         return res.status(404).json({
-          error: "No stock data found for provided tickers",
+          error: "No stock data found",
         });
       }
 
-      const missingTickers = tickers.filter((t) => !stockDataMap.has(t.toUpperCase()));
-      if (missingTickers.length > 0) {
-        return res.status(404).json({
-          error: "Some tickers could not be found",
-          missingTickers,
-        });
+      // We don't need to check for missing tickers from input because we are using the source of truth
+      const missingTickers: string[] = [];
+
+      // 1. Determine the time range based on CURRENT HOLDINGS (or benchmark)
+      // This ensures we optimize for the period relevant to the user's portfolio
+      // instead of being limited by the shortest history in the entire universe.
+      const holdingTickers = input.holdings.map(h => h.ticker);
+      const holdingsDataMap = new Map<string, any>();
+
+      // Always include benchmark for date range calculation if holdings are empty or weird
+      const BENCHMARK_TICKER = "^GSPC";
+      if (holdingTickers.length === 0) {
+        holdingTickers.push(BENCHMARK_TICKER);
       }
 
-      const { startDate, endDate, years } = getCommonDateRange(stockDataMap);
+      holdingTickers.forEach(t => {
+        const data = stockDataMap.get(t.toUpperCase());
+        if (data) holdingsDataMap.set(t.toUpperCase(), data);
+      });
+
+      // If we still have no data (e.g. invalid tickers), fallback to everything
+      const rangeSourceMap = holdingsDataMap.size > 0 ? holdingsDataMap : stockDataMap;
+
+      const { startDate, endDate, years } = getCommonDateRange(rangeSourceMap);
 
       if (years < 0.1) {
         return res.status(400).json({
           error: "Insufficient historical data",
+          details: "Could not establish a valid date range from current holdings."
         });
       }
 
-      const alignedData = alignStockDataToDateRange(stockDataMap, startDate, endDate);
+      // 2. Filter the universe to only include stocks that cover this range
+      // This prevents "Insufficient historical data" errors when aligning
+      const validStockDataMap = new Map<string, any>();
+
+      for (const [ticker, data] of Array.from(stockDataMap.entries())) {
+        // Check if stock has data covering the range (with some tolerance)
+        const stockStart = data.prices[0]?.date;
+        const stockEnd = data.prices.at(-1)?.date;
+
+        if (stockStart && stockEnd && stockStart <= startDate && stockEnd >= endDate) {
+          validStockDataMap.set(ticker, data);
+        }
+      }
+
+      const alignedData = alignStockDataToDateRange(validStockDataMap, startDate, endDate);
 
       const optimizationResult = optimizePortfolio(
         alignedData,

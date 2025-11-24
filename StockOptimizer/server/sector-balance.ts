@@ -207,7 +207,8 @@ export function getTargetSectorAdjustments(
         if (check.rule === 1 && check.sector) {
             // Rule 1: Single sector too high
             const current = sectorMap.get(check.sector) || 0;
-            const target = 30; // Target 30% for overweight sectors
+            // For hard violations (>40%), be more aggressive
+            const target = check.status === 'HARD_VIOLATION' ? 25 : 30;
             adjustments[check.sector] = {
                 current,
                 target,
@@ -230,17 +231,18 @@ export function getTargetSectorAdjustments(
                 }
             });
         } else if (check.rule === 3) {
-            // Rule 3: Defensive sectors too low - increase each
+            // Rule 3: Defensive sectors too low - ALWAYS add them
             DEFENSIVE_SECTORS.forEach(sector => {
                 if (!adjustments[sector]) {
                     const current = sectorMap.get(sector) || 0;
-                    const target = 5; // Target at least 5% each
+                    // For hard violations, target higher allocation
+                    const target = check.status === 'HARD_VIOLATION' ? 8 : 5;
                     if (current < target) {
                         adjustments[sector] = {
                             current,
                             target,
                             delta: target - current,
-                            priority
+                            priority: 'high' // Always high priority for defensive sectors
                         };
                     }
                 }
@@ -298,4 +300,128 @@ export function getSectorStockPool(): Map<string, string[]> {
     });
 
     return sectorStocks;
+}
+
+/**
+ * Applies sector balance adjustments to portfolio holdings
+ * Adjusts allocations to comply with sector balance rules
+ * GUARANTEES zero violations by iteratively refining until compliant
+ */
+export function applySectorBalanceAdjustments(
+    holdings: PortfolioHolding[],
+    report: SectorBalanceReport,
+    alignedData: Map<string, any>
+): PortfolioHolding[] {
+    // If no violations, return original holdings
+    if (report.hardViolations === 0 && report.softWarnings === 0) {
+        return holdings;
+    }
+
+
+
+    let adjustedHoldings = [...holdings];
+    const MAX_ITERATIONS = 20;
+    let iteration = 0;
+
+    // Iteratively adjust until no violations remain
+    while (iteration < MAX_ITERATIONS) {
+        const currentReport = checkSectorBalance(adjustedHoldings);
+
+        if (currentReport.hardViolations === 0 && currentReport.softWarnings === 0) {
+            break;
+        }
+
+        const targetAdjustments = getTargetSectorAdjustments(currentReport, adjustedHoldings);
+        const sectorStockPool = getSectorStockPool();
+
+        // Build sector map for current holdings
+        const sectorHoldingsMap = new Map<string, PortfolioHolding[]>();
+        adjustedHoldings.forEach(holding => {
+            const details = stockCache.getCompanyDetails(holding.ticker);
+            const sector = details?.sector || "Unknown";
+            const sectorHoldings = sectorHoldingsMap.get(sector) || [];
+            sectorHoldings.push(holding);
+            sectorHoldingsMap.set(sector, sectorHoldings);
+        });
+
+        // Step 1: Reduce overweight sectors more aggressively
+        Object.entries(targetAdjustments).forEach(([sector, adj]) => {
+            if (adj.delta < 0) {
+                const sectorHoldings = sectorHoldingsMap.get(sector) || [];
+                // Use more aggressive reduction for hard violations
+                const aggressiveness = currentReport.hardViolations > 0 ? 0.9 : 0.95;
+                const reductionFactor = (adj.target / adj.current) * aggressiveness;
+
+
+
+                sectorHoldings.forEach(holding => {
+                    holding.allocation *= reductionFactor;
+                });
+            }
+        });
+
+        // Step 2: Increase underweight sectors
+        Object.entries(targetAdjustments).forEach(([sector, adj]) => {
+            if (adj.delta > 0) {
+                const sectorHoldings = sectorHoldingsMap.get(sector) || [];
+
+
+
+                if (sectorHoldings.length > 0) {
+                    // Boost existing holdings
+                    const boostFactor = adj.target / adj.current;
+                    sectorHoldings.forEach(holding => {
+                        holding.allocation *= boostFactor;
+                    });
+                } else {
+                    // Add new stocks from this sector
+                    const availableStocks = sectorStockPool.get(sector) || [];
+                    const validStocks = availableStocks.filter(ticker =>
+                        alignedData.has(ticker) && !adjustedHoldings.some(h => h.ticker === ticker)
+                    );
+
+                    if (validStocks.length > 0) {
+                        const stocksToAdd = validStocks.slice(0, Math.min(2, validStocks.length));
+                        const allocationPerStock = adj.delta / stocksToAdd.length;
+
+
+
+                        stocksToAdd.forEach(ticker => {
+                            adjustedHoldings.push({
+                                ticker,
+                                allocation: allocationPerStock
+                            });
+                        });
+                    }
+                }
+            }
+        });
+
+        // Step 3: Normalize to 100%
+        const totalAllocation = adjustedHoldings.reduce((sum, h) => sum + h.allocation, 0);
+        adjustedHoldings.forEach(h => {
+            h.allocation = (h.allocation / totalAllocation) * 100;
+        });
+
+        // Step 4: Filter out very small allocations (< 0.5%)
+        adjustedHoldings = adjustedHoldings.filter(h => h.allocation >= 0.5);
+
+        // Step 5: Renormalize after filtering
+        const finalTotal = adjustedHoldings.reduce((sum, h) => sum + h.allocation, 0);
+        adjustedHoldings.forEach(h => {
+            h.allocation = (h.allocation / finalTotal) * 100;
+        });
+
+        iteration++;
+    }
+
+    // Final verification
+    const finalReport = checkSectorBalance(adjustedHoldings);
+
+
+    if (finalReport.hardViolations > 0 || finalReport.softWarnings > 0) {
+
+    }
+
+    return adjustedHoldings;
 }

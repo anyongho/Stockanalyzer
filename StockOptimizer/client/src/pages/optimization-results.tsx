@@ -5,14 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ArrowRight, TrendingUp, CheckCircle2, XCircle, Activity } from "lucide-react";
+import { ArrowLeft, ArrowRight, TrendingUp, CheckCircle2, XCircle, Activity, Loader2 } from "lucide-react";
 import { type OptimizationResult, type PortfolioInput } from "@shared/schema";
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis } from "recharts";
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis, PieChart, Pie, Cell } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
+import { Progress } from "@/components/ui/progress";
 
 export default function OptimizationResults() {
   const [, setLocation] = useLocation();
   const [portfolioInput, setPortfolioInput] = useState<PortfolioInput | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
 
   const optimizeMutation = useMutation<OptimizationResult, Error, PortfolioInput>({
     mutationFn: async (input: PortfolioInput) => {
@@ -43,6 +46,27 @@ export default function OptimizationResults() {
     }
   }, []);
 
+  // Progress bar animation
+  useEffect(() => {
+    if (optimizeMutation.isPending) {
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const diff = now - startTime;
+        setElapsed(Math.floor(diff / 1000));
+
+        // Animate to 90% over 60 seconds (the server timeout)
+        // We leave the last 10% for the final response
+        const newProgress = Math.min(90, (diff / 60000) * 90);
+        setProgress(newProgress);
+      }, 100);
+
+      return () => clearInterval(interval);
+    } else if (optimizeMutation.data) {
+      setProgress(100);
+    }
+  }, [optimizeMutation.isPending, optimizeMutation.data]);
+
   const result = optimizeMutation.data;
   const isLoading = optimizeMutation.isPending;
   const isError = optimizeMutation.isError;
@@ -53,15 +77,28 @@ export default function OptimizationResults() {
 
   if (isLoading || !result) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container max-w-7xl mx-auto py-8 px-4">
-          <div className="mb-8">
-            <Skeleton className="h-8 w-64 mb-2" />
-            <Skeleton className="h-4 w-96" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="text-center space-y-6 max-w-lg w-full">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto relative z-10" />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <Skeleton className="h-96" />
-            <Skeleton className="h-96" />
+
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">Optimizing Your Portfolio</h2>
+            <p className="text-muted-foreground">
+              Running Monte Carlo simulations and analyzing sector balance...
+              <br />
+              This may take up to a minute.
+            </p>
+          </div>
+
+          <div className="space-y-2 max-w-xs mx-auto w-full">
+            <Progress value={progress} className="h-2" />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{Math.round(progress)}%</span>
+              <span>{elapsed}s</span>
+            </div>
           </div>
         </div>
       </div>
@@ -149,126 +186,175 @@ export default function OptimizationResults() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-blue-500" />
-                섹터 리밸런싱 결과
+                섹터 리밸런싱 결과 (중간 단계)
               </CardTitle>
               <CardDescription>
-                섹터 밸런스 개선을 위한 조정이 적용되었습니다
+                최적화 전, 섹터 밸런스를 맞춘 포트폴리오입니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Current Sector Balance */}
-                <div className="space-y-3">
-                  <div className="font-semibold text-sm text-muted-foreground">현재 포트폴리오</div>
-                  <div className="text-center p-4 rounded-lg bg-muted">
-                    <div className="text-sm text-muted-foreground mb-1">섹터 밸런스 점수</div>
-                    <div className={`text-3xl font-bold ${result.currentSectorBalance.overallScore >= 80 ? 'text-green-600' : result.currentSectorBalance.overallScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      {result.currentSectorBalance.overallScore}/100
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-2">
-                      위반: {result.currentSectorBalance.hardViolations}, 경고: {result.currentSectorBalance.softWarnings}
-                    </div>
-                  </div>
-                  {result.current.sectorDistribution && result.current.sectorDistribution.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-xs font-semibold text-muted-foreground">섹터 분포</div>
-                      {result.current.sectorDistribution.slice(0, 5).map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-sm">
-                          <span>{item.sector}</span>
-                          <span className="font-mono">{item.allocation.toFixed(1)}%</span>
+                {/* Sector Balanced Portfolio Metrics */}
+                <div className="space-y-4">
+                  <div className="font-semibold text-sm text-muted-foreground">섹터 조정 포트폴리오 성과</div>
+                  {result.sectorBalancedPortfolio ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-xs text-muted-foreground">Annual Return</div>
+                        <div className="font-mono font-bold text-blue-700">
+                          {formatPercent(result.sectorBalancedPortfolio.metrics.annualizedReturn)}
                         </div>
-                      ))}
+                      </div>
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-xs text-muted-foreground">Sharpe Ratio</div>
+                        <div className="font-mono font-bold text-blue-700">
+                          {result.sectorBalancedPortfolio.metrics.sharpeRatio.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-xs text-muted-foreground">Volatility</div>
+                        <div className="font-mono font-bold text-blue-700">
+                          {result.sectorBalancedPortfolio.metrics.volatility.toFixed(2)}%
+                        </div>
+                      </div>
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <div className="text-xs text-muted-foreground">Sector Score</div>
+                        <div className="font-mono font-bold text-blue-700">
+                          {result.optimized.sectorBalanceReport.overallScore}/100
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">데이터 없음</div>
+                  )}
+
+                  {/* Sector Balance Issues */}
+                  {result.optimized.sectorBalanceReport.checks.filter(c => c.status !== 'OK').length > 0 && (
+                    <div className="space-y-2 mt-4">
+                      <div className="text-sm font-semibold">남은 섹터 이슈</div>
+                      {result.optimized.sectorBalanceReport.checks
+                        .filter(c => c.status !== 'OK')
+                        .map((check, idx) => {
+                          let bgColor = 'bg-green-50 border-green-200';
+                          let textColor = 'text-green-800';
+                          let icon = '✓';
+
+                          if (check.status === 'HARD_VIOLATION') {
+                            bgColor = 'bg-red-50 border-red-200';
+                            textColor = 'text-red-800';
+                            icon = '✗';
+                          } else if (check.status === 'SOFT_WARNING') {
+                            bgColor = 'bg-yellow-50 border-yellow-200';
+                            textColor = 'text-yellow-800';
+                            icon = '⚠';
+                          } else if (check.status === 'ADVISORY') {
+                            bgColor = 'bg-blue-50 border-blue-200';
+                            textColor = 'text-blue-800';
+                            icon = 'ℹ';
+                          }
+
+                          return (
+                            <div key={idx} className={`p-2 rounded border text-xs ${bgColor} ${textColor}`}>
+                              <span className="mr-2">{icon}</span>
+                              {check.message}
+                            </div>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
 
-                {/* Optimized Sector Balance */}
-                <div className="space-y-3">
-                  <div className="font-semibold text-sm text-muted-foreground">최적화 포트폴리오</div>
-                  <div className="text-center p-4 rounded-lg bg-blue-50 border-2 border-blue-200">
-                    <div className="text-sm text-muted-foreground mb-1">섹터 밸런스 점수</div>
-                    <div className={`text-3xl font-bold ${result.optimized.sectorBalanceReport.overallScore >= 80 ? 'text-green-600' : result.optimized.sectorBalanceReport.overallScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      {result.optimized.sectorBalanceReport.overallScore}/100
-                    </div>
-                    <div className="text-xs text-blue-700 mt-2">
-                      위반: {result.optimized.sectorBalanceReport.hardViolations}, 경고: {result.optimized.sectorBalanceReport.softWarnings}
-                    </div>
-                    {result.optimized.sectorBalanceReport.overallScore > result.currentSectorBalance.overallScore && (
-                      <Badge className="mt-2 bg-green-600">
-                        +{(result.optimized.sectorBalanceReport.overallScore - result.currentSectorBalance.overallScore).toFixed(0)} 개선
-                      </Badge>
-                    )}
-                  </div>
-                  {result.optimized.sectorDistribution && result.optimized.sectorDistribution.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-xs font-semibold text-muted-foreground">섹터 분포</div>
-                      {result.optimized.sectorDistribution.slice(0, 5).map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-sm">
-                          <span>{item.sector}</span>
-                          <span className="font-mono">{item.allocation.toFixed(1)}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                {/* Pie Chart of Sector Balanced Portfolio */}
+                <div className="h-[300px] w-full">
+                  <div className="font-semibold text-sm text-muted-foreground mb-2 text-center">섹터 조정 후 종목 비중</div>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={result.sectorAdjustedHoldings || []}
+                        dataKey="allocation"
+                        nameKey="ticker"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#8884d8"
+                        label={({ ticker, allocation }) => `${ticker} ${allocation.toFixed(1)}%`}
+                      >
+                        {(result.sectorAdjustedHoldings || []).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={`hsl(${index * 45 % 360}, 70%, 50%)`} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => `${value.toFixed(2)}%`}
+                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Sector Balance Issues */}
-              {result.optimized.sectorBalanceReport.checks.filter(c => c.status !== 'OK').length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold">최적화 후 남은 이슈</div>
-                  {result.optimized.sectorBalanceReport.checks
-                    .filter(c => c.status !== 'OK')
-                    .map((check, idx) => {
-                      let bgColor = 'bg-green-50 border-green-200';
-                      let textColor = 'text-green-800';
-                      let icon = '✓';
+              {/* Detailed Sector Comparison Table */}
+              <div className="mt-6">
+                <div className="font-semibold text-sm text-muted-foreground mb-3">섹터 비중 변화 상세</div>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="p-2 text-left">Sector</th>
+                        <th className="p-2 text-right">Before</th>
+                        <th className="p-2 text-center">→</th>
+                        <th className="p-2 text-right">After</th>
+                        <th className="p-2 text-left">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.optimized.sectorDistribution?.map((sector, idx) => {
+                        const before = result.current.sectorDistribution?.find(s => s.sector === sector.sector)?.allocation || 0;
+                        const after = sector.allocation;
+                        const diff = after - before;
 
-                      if (check.status === 'HARD_VIOLATION') {
-                        bgColor = 'bg-red-50 border-red-200';
-                        textColor = 'text-red-800';
-                        icon = '✗';
-                      } else if (check.status === 'SOFT_WARNING') {
-                        bgColor = 'bg-yellow-50 border-yellow-200';
-                        textColor = 'text-yellow-800';
-                        icon = '⚠';
-                      } else if (check.status === 'ADVISORY') {
-                        bgColor = 'bg-blue-50 border-blue-200';
-                        textColor = 'text-blue-800';
-                        icon = 'ℹ';
-                      }
+                        // Find violation status for this sector
+                        const violation = result.currentSectorBalance?.checks.find(c => c.sector === sector.sector);
+                        const wasViolation = violation && violation.status !== 'OK';
 
-                      return (
-                        <div key={idx} className={`p-2 rounded border text-xs ${bgColor} ${textColor}`}>
-                          <span className="mr-2">{icon}</span>
-                          {check.message}
-                        </div>
-                      );
-                    })}
+                        return (
+                          <tr key={idx} className="border-t hover:bg-muted/50">
+                            <td className="p-2 font-medium">{sector.sector}</td>
+                            <td className="p-2 text-right font-mono text-muted-foreground">{before.toFixed(1)}%</td>
+                            <td className="p-2 text-center text-muted-foreground">→</td>
+                            <td className="p-2 text-right font-mono font-bold">{after.toFixed(1)}%</td>
+                            <td className="p-2">
+                              {wasViolation ? (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  Resolved
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* 1. Current Portfolio */}
           <Card>
             <CardHeader>
               <CardTitle>Current Portfolio</CardTitle>
               <CardDescription>Your existing allocation</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Annual Return</div>
                   <div className="text-lg font-mono font-semibold" data-testid="current-return">
                     {formatPercent(result.current.metrics.annualizedReturn)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">Volatility</div>
-                  <div className="text-lg font-mono font-semibold">
-                    {result.current.metrics.volatility.toFixed(2)}%
                   </div>
                 </div>
                 <div>
@@ -284,43 +370,94 @@ export default function OptimizationResults() {
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 pt-4 border-t">
                 <div className="text-sm font-semibold mb-2">Holdings</div>
                 {result.current.holdings.map((holding, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <span className="font-mono font-semibold uppercase">{holding.ticker}</span>
-                    <span className="font-mono">{holding.allocation.toFixed(1)}%</span>
+                  <div key={idx} className="flex items-center justify-between py-1 text-sm">
+                    <span className="font-mono uppercase">{holding.ticker}</span>
+                    <span className="font-mono text-muted-foreground">{holding.allocation.toFixed(1)}%</span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-primary">
+          {/* 2. Sector Balanced Portfolio (Intermediate) */}
+          {result.sectorBalancedPortfolio ? (
+            <Card className="border-blue-200 bg-blue-50/30">
+              <CardHeader>
+                <CardTitle className="text-blue-700">Sector Balanced</CardTitle>
+                <CardDescription>Intermediate step: Sector adjusted</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Annual Return</div>
+                    <div className="text-lg font-mono font-semibold text-blue-700">
+                      {formatPercent(result.sectorBalancedPortfolio.metrics.annualizedReturn)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Sharpe Ratio</div>
+                    <div className="text-lg font-mono font-semibold text-blue-700">
+                      {result.sectorBalancedPortfolio.metrics.sharpeRatio.toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Max Drawdown</div>
+                    <div className="text-lg font-mono font-semibold text-destructive">
+                      {formatPercent(result.sectorBalancedPortfolio.metrics.maxDrawdown)}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2 pt-4 border-t border-blue-100">
+                  <div className="text-sm font-semibold mb-2 text-blue-900">Holdings</div>
+                  {result.sectorBalancedPortfolio.holdings.slice(0, 8).map((holding, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-1 text-sm">
+                      <span className="font-mono uppercase">{holding.ticker}</span>
+                      <span className="font-mono text-muted-foreground">{holding.allocation.toFixed(1)}%</span>
+                    </div>
+                  ))}
+                  {result.sectorBalancedPortfolio.holdings.length > 8 && (
+                    <div className="text-xs text-center text-muted-foreground pt-1">
+                      + {result.sectorBalancedPortfolio.holdings.length - 8} more
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="opacity-50 border-dashed">
+              <CardHeader>
+                <CardTitle>Sector Balanced</CardTitle>
+                <CardDescription>Not applicable</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center h-40 text-muted-foreground">
+                No sector rebalancing applied
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 3. Optimized Portfolio */}
+          <Card className="border-2 border-primary shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Optimized Portfolio
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <TrendingUp className="h-5 w-5" />
+                Optimized
               </CardTitle>
-              <CardDescription>Recommended allocation</CardDescription>
+              <CardDescription>Final recommended allocation</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Annual Return</div>
-                  <div className="text-lg font-mono font-semibold text-green-600 dark:text-green-400" data-testid="optimized-return">
+                  <div className="text-lg font-mono font-bold text-green-600 dark:text-green-400" data-testid="optimized-return">
                     {formatPercent(result.optimized.metrics.annualizedReturn)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Volatility</div>
-                  <div className="text-lg font-mono font-semibold">
-                    {result.optimized.metrics.volatility.toFixed(2)}%
-                  </div>
-                </div>
-                <div>
                   <div className="text-sm text-muted-foreground mb-1">Sharpe Ratio</div>
-                  <div className="text-lg font-mono font-semibold text-green-600 dark:text-green-400" data-testid="optimized-sharpe">
+                  <div className="text-lg font-mono font-bold text-green-600 dark:text-green-400" data-testid="optimized-sharpe">
                     {result.optimized.metrics.sharpeRatio.toFixed(2)}
                   </div>
                 </div>
@@ -331,16 +468,16 @@ export default function OptimizationResults() {
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 pt-4 border-t">
                 <div className="text-sm font-semibold mb-2">Holdings</div>
                 {result.optimized.holdings.map((holding, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div key={idx} className="flex items-center justify-between py-1 text-sm border-b last:border-0 border-dashed">
                     <span className="font-mono font-semibold uppercase">{holding.ticker}</span>
                     <div className="flex items-center gap-2">
                       <span className="font-mono">{holding.allocation.toFixed(1)}%</span>
                       {holding.change !== 0 && (
-                        <Badge variant={holding.change > 0 ? "default" : "secondary"} className="text-xs">
-                          {formatPercent(holding.change)}
+                        <Badge variant={holding.change > 0 ? "default" : "secondary"} className="text-[10px] h-5 px-1">
+                          {holding.change > 0 ? "+" : ""}{holding.change.toFixed(0)}%
                         </Badge>
                       )}
                     </div>
@@ -398,7 +535,7 @@ export default function OptimizationResults() {
           <CardHeader>
             <CardTitle>Efficient Frontier</CardTitle>
             <CardDescription>
-              Risk-return tradeoff visualization (your position vs optimal)
+              Risk-return tradeoff visualization
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -428,11 +565,14 @@ export default function OptimizationResults() {
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
+                      let label = "Frontier Point";
+                      if (data.isCurrent) label = "Current Portfolio";
+                      else if (data.isOptimal) label = "Optimized Portfolio";
+                      else if (data.isSectorCompliant) label = "Sector Balanced";
+
                       return (
                         <div className="rounded-lg border bg-popover p-3 shadow-md">
-                          <div className="font-semibold mb-2">
-                            {data.isCurrent ? "Current Portfolio" : data.isOptimal ? "Optimized Portfolio" : "Frontier Point"}
-                          </div>
+                          <div className="font-semibold mb-2">{label}</div>
                           <div className="space-y-1 text-sm">
                             <div>Return: <span className="font-mono font-semibold">{data.return.toFixed(2)}%</span></div>
                             <div>Volatility: <span className="font-mono font-semibold">{data.volatility.toFixed(2)}%</span></div>
@@ -445,7 +585,7 @@ export default function OptimizationResults() {
                 />
                 <Scatter
                   name="Efficient Frontier"
-                  data={result.efficientFrontier.filter(p => !p.isCurrent && !p.isOptimal)}
+                  data={result.efficientFrontier.filter(p => !p.isCurrent && !p.isOptimal && !p.isSectorCompliant)}
                   fill="hsl(var(--muted-foreground))"
                   opacity={0.4}
                 />
@@ -454,20 +594,28 @@ export default function OptimizationResults() {
                   data={result.efficientFrontier.filter(p => p.isCurrent)}
                   fill="hsl(var(--destructive))"
                   shape="star"
+                  r={6}
                 />
-                <ZAxis range={[100, 100]} />
+                <Scatter
+                  name="Sector Balanced"
+                  data={result.efficientFrontier.filter(p => p.isSectorCompliant)}
+                  fill="#3b82f6" // Blue
+                  shape="triangle"
+                  r={6}
+                />
                 <Scatter
                   name="Optimized"
                   data={result.efficientFrontier.filter(p => p.isOptimal)}
                   fill="hsl(var(--chart-2))"
                   shape="star"
+                  r={8}
                 />
                 <Legend />
               </ScatterChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
