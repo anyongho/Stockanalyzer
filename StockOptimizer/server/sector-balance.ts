@@ -312,17 +312,15 @@ export function applySectorBalanceAdjustments(
     report: SectorBalanceReport,
     alignedData: Map<string, any>
 ): PortfolioHolding[] {
-    // If no violations, return original holdings
-    if (report.hardViolations === 0 && report.softWarnings === 0) {
-        return holdings;
-    }
-
-
-
-
     // CRITICAL: Deep copy holdings to avoid mutating the original array
     // Shallow copy [...holdings] would still share the same holding objects!
     let adjustedHoldings = holdings.map(h => ({ ...h }));
+
+    // If no violations, we still return a fresh copy to ensure immutability
+    if (report.hardViolations === 0 && report.softWarnings === 0) {
+        return adjustedHoldings;
+    }
+
     const MAX_ITERATIONS = 20;
     let iteration = 0;
 
@@ -372,10 +370,12 @@ export function applySectorBalanceAdjustments(
 
                 if (sectorHoldings.length > 0) {
                     // Boost existing holdings
-                    const boostFactor = adj.target / adj.current;
-                    sectorHoldings.forEach(holding => {
-                        holding.allocation *= boostFactor;
-                    });
+                    if (adj.current > 0) { // Add guard against division by zero
+                        const boostFactor = adj.target / adj.current;
+                        sectorHoldings.forEach(holding => {
+                            holding.allocation *= boostFactor;
+                        });
+                    }
                 } else {
                     // Add new stocks from this sector
                     const availableStocks = sectorStockPool.get(sector) || [];

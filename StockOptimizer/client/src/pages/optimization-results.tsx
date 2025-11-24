@@ -85,11 +85,11 @@ export default function OptimizationResults() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight">Optimizing Your Portfolio</h2>
+            <h2 className="text-2xl font-bold tracking-tight">포트폴리오 최적화 진행 중</h2>
             <p className="text-muted-foreground">
-              Running Monte Carlo simulations and analyzing sector balance...
+              몬테카를로 시뮬레이션 및 섹터 밸런스 분석 중입니다...
               <br />
-              This may take up to a minute.
+              최대 1분 정도 소요될 수 있습니다.
             </p>
           </div>
 
@@ -110,13 +110,13 @@ export default function OptimizationResults() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>Optimization Failed</CardTitle>
-            <CardDescription>Unable to optimize portfolio</CardDescription>
+            <CardTitle>최적화 실패</CardTitle>
+            <CardDescription>포트폴리오를 최적화할 수 없습니다</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => setLocation("/analysis")} data-testid="button-back">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Analysis
+              분석 페이지로 돌아가기
             </Button>
           </CardContent>
         </Card>
@@ -177,49 +177,53 @@ export default function OptimizationResults() {
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" onClick={() => setLocation("/analysis")} data-testid="button-back">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                뒤로
               </Button>
-              <h1 className="text-3xl font-bold">Portfolio Optimization</h1>
+              <h1 className="text-3xl font-bold">포트폴리오 최적화</h1>
             </div>
             <Button variant="outline" onClick={downloadExcel}>
               <Download className="h-4 w-4 mr-2" />
-              Download Excel
+              Excel로 다운로드
             </Button>
           </div>
           <p className="text-muted-foreground">
-            Optimized for {portfolioInput.riskTolerance} risk tolerance with {portfolioInput.targetReturn}% target return
+            {
+              portfolioInput.riskTolerance === 'conservative' ? '보수적' :
+              portfolioInput.riskTolerance === 'moderate' ? '중도적' :
+              '공격적'
+            } 위험 선호도 및 {portfolioInput.targetReturn}% 목표수익률로 최적화됨
           </p>
         </div>
 
         <Card className="mb-8 border-2 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
-            <CardTitle className="text-2xl">Optimization Summary</CardTitle>
+            <CardTitle className="text-2xl">최적화 요약</CardTitle>
             <CardDescription className="text-base">
-              Improved Sharpe Ratio by {improvement >= 0 ? "+" : ""}{improvement.toFixed(2)} ({((improvement / result.current.metrics.sharpeRatio) * 100).toFixed(1)}%)
+              샤프 지수 {improvement >= 0 ? "개선" : "악화"}: {improvement >= 0 ? "+" : ""}{improvement.toFixed(2)} ({((improvement / result.current.metrics.sharpeRatio) * 100).toFixed(1)}%)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-5 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800">
-                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Return Improvement</div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">수익률 개선</div>
                 <div className={`text-2xl font-mono font-bold ${result.optimized.metrics.annualizedReturn >= result.current.metrics.annualizedReturn ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {formatPercent(result.optimized.metrics.annualizedReturn - result.current.metrics.annualizedReturn)}
                 </div>
               </div>
               <div className="text-center p-5 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border border-blue-200 dark:border-blue-800">
-                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Volatility Change</div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">변동성 변화</div>
                 <div className={`text-2xl font-mono font-bold ${result.optimized.metrics.volatility <= result.current.metrics.volatility ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {formatPercent(result.optimized.metrics.volatility - result.current.metrics.volatility)}
                 </div>
               </div>
               <div className="text-center p-5 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200 dark:border-purple-800">
-                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Sharpe Improvement</div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">샤프 지수 개선</div>
                 <div className={`text-2xl font-mono font-bold ${improvement >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {improvement >= 0 ? "+" : ""}{improvement.toFixed(2)}
                 </div>
               </div>
               <div className="text-center p-5 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border border-orange-200 dark:border-orange-800">
-                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Drawdown Change</div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">최대 낙폭 변화</div>
                 <div className={`text-2xl font-mono font-bold ${result.optimized.metrics.maxDrawdown >= result.current.metrics.maxDrawdown ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {formatPercent(result.optimized.metrics.maxDrawdown - result.current.metrics.maxDrawdown)}
                 </div>
@@ -318,7 +322,7 @@ export default function OptimizationResults() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <defs>
-                        {(result.sectorAdjustedHoldings || []).map((entry, index) => (
+                        {(result.sectorBalancedPortfolio?.holdings || []).map((entry, index) => (
                           <linearGradient key={`gradient-${index}`} id={`pieGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor={`hsl(${(index * 45) % 360}, 70%, 55%)`} stopOpacity={0.9}></stop>
                             <stop offset="95%" stopColor={`hsl(${(index * 45) % 360}, 70%, 45%)`} stopOpacity={0.8}></stop>
@@ -326,7 +330,7 @@ export default function OptimizationResults() {
                         ))}
                       </defs>
                       <Pie
-                        data={result.sectorAdjustedHoldings || []}
+                        data={result.sectorBalancedPortfolio?.holdings || []}
                         dataKey="allocation"
                         nameKey="ticker"
                         cx="50%"
@@ -337,7 +341,7 @@ export default function OptimizationResults() {
                         label={({ ticker, allocation }) => `${ticker} ${allocation.toFixed(1)}%`}
                         labelLine={{ stroke: 'hsl(var(--foreground))', strokeWidth: 1 }}
                       >
-                        {(result.sectorAdjustedHoldings || []).map((entry, index) => (
+                        {(result.sectorBalancedPortfolio?.holdings || []).map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={`url(#pieGradient-${index})`}
@@ -415,32 +419,32 @@ export default function OptimizationResults() {
           {/* 1. Current Portfolio */}
           <Card>
             <CardHeader>
-              <CardTitle>Current Portfolio</CardTitle>
-              <CardDescription>Your existing allocation</CardDescription>
+              <CardTitle>현재 포트폴리오</CardTitle>
+              <CardDescription>기존 종목 구성</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Annual Return</div>
+                  <div className="text-sm text-muted-foreground mb-1">연평균 수익률</div>
                   <div className="text-lg font-mono font-semibold" data-testid="current-return">
                     {formatPercent(result.current.metrics.annualizedReturn)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Sharpe Ratio</div>
+                  <div className="text-sm text-muted-foreground mb-1">샤프 지수</div>
                   <div className="text-lg font-mono font-semibold" data-testid="current-sharpe">
                     {result.current.metrics.sharpeRatio.toFixed(2)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Max Drawdown</div>
+                  <div className="text-sm text-muted-foreground mb-1">최대 낙폭</div>
                   <div className="text-lg font-mono font-semibold text-destructive">
                     {formatPercent(result.current.metrics.maxDrawdown)}
                   </div>
                 </div>
               </div>
               <div className="space-y-2 pt-4 border-t">
-                <div className="text-sm font-semibold mb-2">Holdings</div>
+                <div className="text-sm font-semibold mb-2">보유 종목</div>
                 {result.current.holdings.map((holding, idx) => (
                   <div key={idx} className="flex items-center justify-between py-1 text-sm">
                     <div className="flex items-center gap-1">
@@ -465,32 +469,32 @@ export default function OptimizationResults() {
           {result.sectorBalancedPortfolio ? (
             <Card className="border-blue-200 bg-blue-50/30">
               <CardHeader>
-                <CardTitle className="text-blue-700">Sector Balanced</CardTitle>
-                <CardDescription>Intermediate step: Sector adjusted</CardDescription>
+                <CardTitle className="text-blue-700">섹터 균형</CardTitle>
+                <CardDescription>중간 단계: 섹터 조정됨</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">Annual Return</div>
+                    <div className="text-sm text-muted-foreground mb-1">연평균 수익률</div>
                     <div className="text-lg font-mono font-semibold text-blue-700">
                       {formatPercent(result.sectorBalancedPortfolio.metrics.annualizedReturn)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">Sharpe Ratio</div>
+                    <div className="text-sm text-muted-foreground mb-1">샤프 지수</div>
                     <div className="text-lg font-mono font-semibold text-blue-700">
                       {result.sectorBalancedPortfolio.metrics.sharpeRatio.toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground mb-1">Max Drawdown</div>
+                    <div className="text-sm text-muted-foreground mb-1">최대 낙폭</div>
                     <div className="text-lg font-mono font-semibold text-destructive">
                       {formatPercent(result.sectorBalancedPortfolio.metrics.maxDrawdown)}
                     </div>
                   </div>
                 </div>
                 <div className="space-y-2 pt-4 border-t border-blue-100">
-                  <div className="text-sm font-semibold mb-2 text-blue-900">Holdings</div>
+                  <div className="text-sm font-semibold mb-2 text-blue-900">보유 종목</div>
                   {result.sectorBalancedPortfolio.holdings.slice(0, 8).map((holding, idx) => (
                     <div key={idx} className="flex items-center justify-between py-1 text-sm">
                       <div className="flex items-center gap-1">
@@ -518,11 +522,11 @@ export default function OptimizationResults() {
           ) : (
             <Card className="opacity-50 border-dashed">
               <CardHeader>
-                <CardTitle>Sector Balanced</CardTitle>
-                <CardDescription>Not applicable</CardDescription>
+                <CardTitle>섹터 균형</CardTitle>
+                <CardDescription>해당 없음</CardDescription>
               </CardHeader>
               <CardContent className="flex items-center justify-center h-40 text-muted-foreground">
-                No sector rebalancing applied
+                섹터 리밸런싱이 적용되지 않았습니다
               </CardContent>
             </Card>
           )}
@@ -532,33 +536,33 @@ export default function OptimizationResults() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <TrendingUp className="h-5 w-5" />
-                Optimized
+                최적화 포트폴리오
               </CardTitle>
-              <CardDescription>Final recommended allocation</CardDescription>
+              <CardDescription>최종 추천 종목 구성</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Annual Return</div>
+                  <div className="text-sm text-muted-foreground mb-1">연평균 수익률</div>
                   <div className="text-lg font-mono font-bold text-green-600 dark:text-green-400" data-testid="optimized-return">
                     {formatPercent(result.optimized.metrics.annualizedReturn)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Sharpe Ratio</div>
+                  <div className="text-sm text-muted-foreground mb-1">샤프 지수</div>
                   <div className="text-lg font-mono font-bold text-green-600 dark:text-green-400" data-testid="optimized-sharpe">
                     {result.optimized.metrics.sharpeRatio.toFixed(2)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Max Drawdown</div>
+                  <div className="text-sm text-muted-foreground mb-1">최대 낙폭</div>
                   <div className="text-lg font-mono font-semibold text-destructive">
                     {formatPercent(result.optimized.metrics.maxDrawdown)}
                   </div>
                 </div>
               </div>
               <div className="space-y-2 pt-4 border-t">
-                <div className="text-sm font-semibold mb-2">Holdings</div>
+                <div className="text-sm font-semibold mb-2">보유 종목</div>
                 {result.optimized.holdings.map((holding, idx) => (
                   <div key={idx} className="flex items-center justify-between py-1 text-sm border-b last:border-0 border-dashed">
                     <div className="flex items-center gap-1">
@@ -589,9 +593,9 @@ export default function OptimizationResults() {
 
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Optimization Recommendations</CardTitle>
+            <CardTitle>최적화 권장 사항</CardTitle>
             <CardDescription>
-              Specific actions to improve your portfolio
+              포트폴리오 개선을 위한 구체적인 조치
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -609,7 +613,14 @@ export default function OptimizationResults() {
                       ) : (
                         <XCircle className="h-5 w-5 text-destructive" />
                       )}
-                      <div className="font-semibold">{rec.action}</div>
+                      <div className="font-semibold">
+                        {{
+                          "Add position": "종목 추가",
+                          "Increase allocation": "비중 확대",
+                          "Remove position": "종목 제거",
+                          "Decrease allocation": "비중 축소",
+                        }[rec.action] || rec.action}
+                      </div>
                     </div>
                     <Badge variant={rec.change > 0 ? "default" : "secondary"}>
                       {formatPercent(rec.change)}
@@ -641,116 +652,115 @@ export default function OptimizationResults() {
           </CardContent>
         </Card>
 
-        <Card className="border-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Efficient Frontier
-            </CardTitle>
-            <CardDescription>
-              Risk-return tradeoff visualization - Higher points indicate better returns
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={450}>
-              <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
-                <defs>
-                  <linearGradient id="frontierGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}></stop>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}></stop>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  opacity={0.2}
-                  vertical={false}
-                />
-                <XAxis
-                  type="number"
-                  dataKey="volatility"
-                  name="Volatility"
-                  unit="%"
-                  stroke="hsl(var(--foreground))"
-                  fontSize={13}
-                  fontWeight={500}
-                  tickLine={false}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                  label={{
-                    value: "Volatility (%)",
-                    position: "insideBottom",
-                    offset: -15,
-                    style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
-                  }}
-                />
-                <YAxis
-                  type="number"
-                  dataKey="return"
-                  name="Return"
-                  unit="%"
-                  stroke="hsl(var(--foreground))"
-                  fontSize={13}
-                  fontWeight={500}
-                  tickLine={false}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                  label={{
-                    value: "Annual Return (%)",
-                    angle: -90,
-                    position: "insideLeft",
-                    style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
-                  }}
-                />
-                <Tooltip
-                  cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))", strokeWidth: 1.5 }}
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      let label = "Frontier Point";
-                      let bgColor = "bg-background";
-                      let borderColor = "border-border";
-
-                      if (data.isCurrent) {
-                        label = "Current Portfolio";
-                        borderColor = "border-red-500";
-                      } else if (data.isOptimal) {
-                        label = "Optimized Portfolio";
-                        borderColor = "border-green-500";
-                      } else if (data.isSectorCompliant) {
-                        label = "Sector Balanced";
-                        borderColor = "border-blue-500";
-                      }
-
-                      return (
-                        <div className={`rounded-xl border-2 ${borderColor} ${bgColor} p-4 shadow-xl backdrop-blur-sm bg-opacity-95`}>
-                          <div className="font-bold mb-2 text-sm">{label}</div>
-                          <div className="space-y-1.5 text-sm">
-                            <div className="flex justify-between gap-4">
-                              <span className="text-muted-foreground">Return:</span>
-                              <span className="font-mono font-semibold text-green-600 dark:text-green-400">
-                                {data.return.toFixed(2)}%
-                              </span>
-                            </div>
-                            <div className="flex justify-between gap-4">
-                              <span className="text-muted-foreground">Volatility:</span>
-                              <span className="font-mono font-semibold text-orange-600 dark:text-orange-400">
-                                {data.volatility.toFixed(2)}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Scatter
-                  name="Efficient Frontier"
-                  data={result.efficientFrontier.filter(p => !p.isCurrent && !p.isOptimal && !p.isSectorCompliant)}
-                  fill="url(#frontierGradient)"
-                  opacity={0.6}
-                  shape="circle"
-                />
-                <Scatter
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5 text-primary" />
+                      포트폴리오 시뮬레이션
+                    </CardTitle>
+                    <CardDescription>
+                      몬테카를로 시뮬레이션을 통해 생성된 포트폴리오들의 위험-수익 분포입니다.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={450}>
+                      <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+                        <defs>
+                          <linearGradient id="frontierGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}></stop>
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}></stop>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="hsl(var(--border))"
+                          opacity={0.2}
+                          vertical={false}
+                        />
+                        <XAxis
+                          type="number"
+                          dataKey="volatility"
+                          name="Volatility"
+                          unit="%"
+                          stroke="hsl(var(--foreground))"
+                          fontSize={13}
+                          fontWeight={500}
+                          tickLine={false}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                          label={{
+                            value: "Volatility (%)",
+                            position: "insideBottom",
+                            offset: -15,
+                            style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
+                          }}
+                        />
+                        <YAxis
+                          type="number"
+                          dataKey="return"
+                          name="Return"
+                          unit="%"
+                          stroke="hsl(var(--foreground))"
+                          fontSize={13}
+                          fontWeight={500}
+                          tickLine={false}
+                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                          label={{
+                            value: "Annual Return (%)",
+                            angle: -90,
+                            position: "insideLeft",
+                            style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
+                          }}
+                        />
+                        <Tooltip
+                          cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))", strokeWidth: 1.5 }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              let label = "시뮬레이션 포트폴리오";
+                              let bgColor = "bg-background";
+                              let borderColor = "border-border";
+        
+                              if (data.isCurrent) {
+                                label = "Current Portfolio";
+                                borderColor = "border-red-500";
+                              } else if (data.isOptimal) {
+                                label = "Optimized Portfolio";
+                                borderColor = "border-green-500";
+                              } else if (data.isSectorCompliant) {
+                                label = "Sector Balanced";
+                                borderColor = "border-blue-500";
+                              }
+        
+                              return (
+                                <div className={`rounded-xl border-2 ${borderColor} ${bgColor} p-4 shadow-xl backdrop-blur-sm bg-opacity-95`}>
+                                  <div className="font-bold mb-2 text-sm">{label}</div>
+                                  <div className="space-y-1.5 text-sm">
+                                    <div className="flex justify-between gap-4">
+                                      <span className="text-muted-foreground">Return:</span>
+                                      <span className="font-mono font-semibold text-green-600 dark:text-green-400">
+                                        {data.return.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between gap-4">
+                                      <span className="text-muted-foreground">Volatility:</span>
+                                      <span className="font-mono font-semibold text-orange-600 dark:text-orange-400">
+                                        {data.volatility.toFixed(2)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Scatter
+                          name="시뮬레이션 포트폴리오"
+                          data={result.efficientFrontier.filter(p => !p.isCurrent && !p.isOptimal && !p.isSectorCompliant)}
+                          fill="url(#frontierGradient)"
+                          opacity={0.8}
+                          shape="circle"
+                        />                <Scatter
                   name="Current"
                   data={result.efficientFrontier.filter(p => p.isCurrent)}
                   fill="#ef4444"

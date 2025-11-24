@@ -162,307 +162,307 @@ export default function PortfolioInput() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl mx-auto py-8 px-4">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-3">Portfolio Analyzer</h1>
-          <p className="text-lg text-muted-foreground">
-            Analyze and optimize your US stock portfolio with advanced metrics
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Form Area */}
-          <div className="lg:col-span-2">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <Card
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  className="border-dashed border-2 border-transparent hover:border-primary/20 transition-colors"
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                        Portfolio Holdings
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="input-mode" className="text-sm font-medium">
-                          {useAmountInput ? "Amount ($)" : "Percentage (%)"}
-                        </Label>
-                        <Switch
-                          id="input-mode"
-                          checked={useAmountInput}
-                          onCheckedChange={setUseAmountInput}
-                        />
-                      </div>
-                    </div>
-                    <CardDescription>
-                      {useAmountInput
-                        ? "Enter the investment amount for each stock. We'll calculate the weights."
-                        : "Enter allocation percentages. Total must equal 100%."}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      {fields.map((field, index) => (
-                        <div key={field.id} className="flex items-start gap-4 p-2 rounded-lg hover:bg-accent/50 transition-colors group">
-                          <div className="mt-3 text-muted-foreground cursor-grab active:cursor-grabbing">
-                            <GripVertical className="h-4 w-4" />
-                          </div>
-                          <FormField
-                            control={form.control}
-                            name={`holdings.${index}.ticker`}
-                            render={({ field }) => (
-                              <FormItem className="flex-1">
-                                {index === 0 && <FormLabel>Ticker Symbol</FormLabel>}
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder="AAPL"
-                                    className="uppercase font-mono"
-                                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`holdings.${index}.allocation`}
-                            render={({ field }) => (
-                              <FormItem className="w-40">
-                                {index === 0 && <FormLabel>{useAmountInput ? "Amount" : "Allocation %"}</FormLabel>}
-                                <FormControl>
-                                  <div className="relative">
-                                    <Input
-                                      {...field}
-                                      type="number"
-                                      step={useAmountInput ? "1" : "0.01"}
-                                      min="0"
-                                      placeholder={useAmountInput ? "10000" : "25.00"}
-                                      className="font-mono pr-12"
-                                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                    />
-                                    {useAmountInput && totalValue > 0 && (
-                                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
-                                        {((field.value / totalValue) * 100).toFixed(1)}%
-                                      </div>
+                <div className="mb-8 text-center">
+                  <h1 className="text-4xl font-bold mb-3">포트폴리오 분석기</h1>
+                  <p className="text-lg text-muted-foreground">
+                    고급 지표를 사용하여 미국 주식 포트폴리오를 분석하고 최적화하세요
+                  </p>
+                </div>
+        
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Main Form Area */}
+                  <div className="lg:col-span-2">
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <Card
+                          onDrop={handleDrop}
+                          onDragOver={handleDragOver}
+                          className="border-dashed border-2 border-transparent hover:border-primary/20 transition-colors"
+                        >
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="flex items-center gap-2">
+                                <TrendingUp className="h-5 w-5" />
+                                Portfolio Holdings
+                              </CardTitle>
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor="input-mode" className="text-sm font-medium">
+                                  {useAmountInput ? "Amount ($)" : "Percentage (%)"}
+                                </Label>
+                                <Switch
+                                  id="input-mode"
+                                  checked={useAmountInput}
+                                  onCheckedChange={setUseAmountInput}
+                                />
+                              </div>
+                            </div>
+                            <CardDescription>
+                              {useAmountInput
+                                ? "Enter the investment amount for each stock. We'll calculate the weights."
+                                : "Enter allocation percentages. Total must equal 100%."}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <div className="space-y-4">
+                              {fields.map((field, index) => (
+                                <div key={field.id} className="flex items-start gap-4 p-2 rounded-lg hover:bg-accent/50 transition-colors group">
+                                  <div className="mt-3 text-muted-foreground cursor-grab active:cursor-grabbing">
+                                    <GripVertical className="h-4 w-4" />
+                                  </div>
+                                  <FormField
+                                    control={form.control}
+                                    name={`holdings.${index}.ticker`}
+                                    render={({ field }) => (
+                                      <FormItem className="flex-1">
+                                        {index === 0 && <FormLabel>Ticker Symbol</FormLabel>}
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            placeholder="AAPL"
+                                            className="uppercase font-mono"
+                                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
                                     )}
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          {fields.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => remove(index)}
-                              className={index === 0 ? "mt-8" : "mt-0"}
-                            >
-                              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => append({ ticker: "", allocation: 0 })}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Holding
-                      </Button>
-                      <div className="text-right">
-                        <div className="text-sm font-mono">
-                          Total: <span className={
-                            (!useAmountInput && Math.abs(totalValue - 100) < 0.01) || (useAmountInput && totalValue > 0)
-                              ? "text-green-600 dark:text-green-400 font-semibold"
-                              : "text-destructive font-semibold"
-                          }>
-                            {useAmountInput
-                              ? `$${totalValue.toLocaleString()}`
-                              : `${totalValue.toFixed(2)}%`
-                            }
-                          </span>
-                        </div>
-                        {useAmountInput && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Weighted average calculation enabled
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
-                      Risk Profile
-                    </CardTitle>
-                    <CardDescription>
-                      Help us understand your investment preferences
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="riskTolerance"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Risk Tolerance</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              className="grid grid-cols-1 md:grid-cols-3 gap-4"
-                            >
-                              {["conservative", "moderate", "aggressive"].map((risk) => (
-                                <label
-                                  key={risk}
-                                  htmlFor={risk}
-                                  className={`flex items-start space-x-3 space-y-0 rounded-lg border-2 p-4 cursor-pointer transition-colors ${field.value === risk
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:bg-accent"
-                                    }`}
-                                >
-                                  <RadioGroupItem value={risk} id={risk} />
-                                  <div className="flex-1 capitalize">
-                                    <div className="font-semibold mb-1">{risk}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {risk === "conservative" && "Prioritize capital preservation"}
-                                      {risk === "moderate" && "Balance growth and stability"}
-                                      {risk === "aggressive" && "Seek maximum growth"}
-                                    </div>
-                                  </div>
-                                </label>
-                              ))}
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="targetReturn"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            <Target className="h-4 w-4" />
-                            Target Annual Return: <span className="font-mono font-semibold">{field.value}%</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Slider
-                              min={1}
-                              max={30}
-                              step={0.5}
-                              value={[field.value || 10]}
-                              onValueChange={(vals) => field.onChange(vals[0])}
-                              className="py-4"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-
-                <div className="flex justify-center">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full md:w-auto px-12"
-                    disabled={isAnalyzing || (!useAmountInput && Math.abs(totalValue - 100) > 0.01)}
-                  >
-                    {isAnalyzing ? "Analyzing..." : "Analyze Portfolio"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-
-          {/* Sidebar - Ticker List */}
-          <div className="lg:col-span-1">
-            <Card className="h-full max-h-[800px] flex flex-col sticky top-8">
-              <CardHeader>
-                <CardTitle>Available Companies</CardTitle>
-                <CardDescription>
-                  Drag and drop to add to portfolio
-                </CardDescription>
-                <div className="relative mt-2">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by ticker or name..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 p-0 overflow-hidden">
-                <ScrollArea className="h-[600px] px-4 pb-4">
-                  <div className="grid grid-cols-1 gap-2">
-                    {filteredCompanies.map((company) => (
-                      <TooltipProvider key={company.ticker}>
-                        <Tooltip delayDuration={300}>
-                          <TooltipTrigger asChild>
-                            <div
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, company.ticker)}
-                              className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent cursor-grab active:cursor-grabbing transition-colors group"
-                            >
-                              <div className="flex flex-col items-start overflow-hidden">
-                                <span className="font-bold font-mono text-sm">{company.ticker}</span>
-                                <span className="text-xs text-muted-foreground truncate w-full text-left" title={company.name}>
-                                  {company.name}
-                                </span>
-                              </div>
-                              <Info className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" className="max-w-[300px] p-4">
-                            <div className="space-y-2">
-                              <div className="font-bold">{company.name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {company.sector} | {company.industry}
-                              </div>
-                              {company.founded && (
-                                <div className="text-xs text-muted-foreground">
-                                  Founded: {company.founded}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name={`holdings.${index}.allocation`}
+                                    render={({ field }) => (
+                                      <FormItem className="w-40">
+                                        {index === 0 && <FormLabel>{useAmountInput ? "Amount" : "Allocation %"}</FormLabel>}
+                                        <FormControl>
+                                          <div className="relative">
+                                            <Input
+                                              {...field}
+                                              type="number"
+                                              step={useAmountInput ? "1" : "0.01"}
+                                              min="0"
+                                              placeholder={useAmountInput ? "10000" : "25.00"}
+                                              className="font-mono pr-12"
+                                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                            />
+                                            {useAmountInput && totalValue > 0 && (
+                                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
+                                                {((field.value / totalValue) * 100).toFixed(1)}%
+                                              </div>
+                                            )}
+                                          </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  {fields.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => remove(index)}
+                                      className={index === 0 ? "mt-8" : "mt-0"}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                    </Button>
+                                  )}
                                 </div>
-                              )}
-                              <div className="text-xs line-clamp-6 pt-2 border-t mt-2">
-                                {company.description}
+                              ))}
+                            </div>
+        
+                            <div className="flex items-center justify-between pt-4 border-t">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => append({ ticker: "", allocation: 0 })}
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Holding
+                              </Button>
+                              <div className="text-right">
+                                <div className="text-sm font-mono">
+                                  Total: <span className={
+                                    (!useAmountInput && Math.abs(totalValue - 100) < 0.01) || (useAmountInput && totalValue > 0)
+                                      ? "text-green-600 dark:text-green-400 font-semibold"
+                                      : "text-destructive font-semibold"
+                                  }>
+                                    {useAmountInput
+                                      ? `${totalValue.toLocaleString()}`
+                                      : `${totalValue.toFixed(2)}%`
+                                    }
+                                  </span>
+                                </div>
+                                {useAmountInput && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    Weighted average calculation enabled
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                    {filteredCompanies.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No companies found
-                      </div>
-                    )}
+                          </CardContent>
+                        </Card>
+        
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Shield className="h-5 w-5" />
+                              Risk Profile
+                            </CardTitle>
+                            <CardDescription>
+                              Help us understand your investment preferences
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-6">
+                            <FormField
+                              control={form.control}
+                              name="riskTolerance"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Risk Tolerance</FormLabel>
+                                  <FormControl>
+                                    <RadioGroup
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value}
+                                      className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                                    >
+                                      {["conservative", "moderate", "aggressive"].map((risk) => (
+                                        <label
+                                          key={risk}
+                                          htmlFor={risk}
+                                          className={`flex items-start space-x-3 space-y-0 rounded-lg border-2 p-4 cursor-pointer transition-colors ${field.value === risk
+                                            ? "border-primary bg-primary/5"
+                                            : "border-border hover:bg-accent"
+                                            }`}
+                                        >
+                                          <RadioGroupItem value={risk} id={risk} />
+                                          <div className="flex-1 capitalize">
+                                            <div className="font-semibold mb-1">{risk}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                              {risk === "conservative" && "Prioritize capital preservation"}
+                                              {risk === "moderate" && "Balance growth and stability"}
+                                              {risk === "aggressive" && "Seek maximum growth"}
+                                            </div>
+                                          </div>
+                                        </label>
+                                      ))}
+                                    </RadioGroup>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+        
+                            <FormField
+                              control={form.control}
+                              name="targetReturn"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="flex items-center gap-2">
+                                    <Target className="h-4 w-4" />
+                                    Target Annual Return: <span className="font-mono font-semibold">{field.value}%</span>
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Slider
+                                      min={1}
+                                      max={30}
+                                      step={0.5}
+                                      value={[field.value || 10]}
+                                      onValueChange={(vals) => field.onChange(vals[0])}
+                                      className="py-4"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </CardContent>
+                        </Card>
+        
+                        <div className="flex justify-center">
+                                            <Button
+                                              type="submit"
+                                              size="lg"
+                                              className="w-full md:w-auto px-12"
+                                              disabled={isAnalyzing || (!useAmountInput && Math.abs(totalValue - 100) > 0.01)}
+                                            >
+                                              {isAnalyzing ? "분석 중..." : "포트폴리오 분석"}
+                                            </Button>                        </div>
+                      </form>
+                    </Form>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+                  
+                  {/* Sidebar - Ticker List */}
+                  <div className="lg:col-span-1">
+                    <Card className="h-full max-h-[800px] flex flex-col sticky top-8">
+                      <CardHeader>
+                        <CardTitle>Available Companies</CardTitle>
+                        <CardDescription>
+                          Drag and drop to add to portfolio
+                        </CardDescription>
+                        <div className="relative mt-2">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search by ticker or name..."
+                            className="pl-8"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="flex-1 p-0 overflow-hidden">
+                        <ScrollArea className="h-[600px] px-4 pb-4">
+                          <div className="grid grid-cols-1 gap-2">
+                            {filteredCompanies.map((company) => (
+                              <TooltipProvider key={company.ticker}>
+                                <Tooltip delayDuration={300}>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      draggable
+                                      onDragStart={(e) => handleDragStart(e, company.ticker)}
+                                      className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent cursor-grab active:cursor-grabbing transition-colors group"
+                                    >
+                                      <div className="flex flex-col items-start overflow-hidden">
+                                        <span className="font-bold font-mono text-sm">{company.ticker}</span>
+                                        <span className="text-xs text-muted-foreground truncate w-full text-left" title={company.name}>
+                                          {company.name}
+                                        </span>
+                                      </div>
+                                      <Info className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-[300px] p-4">
+                                    <div className="space-y-2">
+                                      <div className="font-bold">{company.name}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {company.sector} | {company.industry}
+                                      </div>
+                                      {company.founded && (
+                                        <div className="text-xs text-muted-foreground">
+                                          Founded: {company.founded}
+                                        </div>
+                                      )}
+                                      <div className="text-xs line-clamp-6 pt-2 border-t mt-2">
+                                        {company.description}
+                                      </div>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ))}
+                            {filteredCompanies.length === 0 && (
+                              <div className="text-center py-8 text-muted-foreground">
+                                No companies found
+                              </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        

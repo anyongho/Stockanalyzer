@@ -26,6 +26,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Area,
 } from "recharts";
 
 const COLORS = [
@@ -41,26 +42,7 @@ function formatDate(dateStr: string) {
   return dateStr.slice(0, 7); // "2022-03"
 }
 
-// 커스텀 툴팁
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{
-        background: "white",
-        border: "1.5px solid #cdd5df",
-        padding: "12px",
-        borderRadius: "7px",
-        boxShadow: "0 2px 12px #eef2fb",
-        minWidth: 170,
-      }}>
-        <div style={{ fontWeight: 700, marginBottom: 5 }}>{formatDate(label || "")}</div>
-        <div style={{ color: "#0066ff", fontWeight: 500 }}>My Portfolio: <span style={{ fontWeight: 700 }}>{formatCurrency(payload[0].value)}</span></div>
-        <div style={{ color: "#50B37B", fontWeight: 500 }}>S&P 500: <span style={{ fontWeight: 700 }}>{formatCurrency(payload[1].value)}</span></div>
-      </div>
-    );
-  }
-  return null;
-};
+
 
 export default function AnalysisDashboard() {
   const [, setLocation] = useLocation();
@@ -113,48 +95,48 @@ export default function AnalysisDashboard() {
 
   const coreCards = [
     {
-      title: "Total Return",
+      title: "총수익률",
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
       value: metrics.totalReturn,
       color: metrics.totalReturn >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive",
-      desc: `Over ${periodYears.toFixed(1)} years`
+      desc: `${periodYears.toFixed(1)}년 동안`
     },
     {
-      title: "Annualized Return",
+      title: "연평균 수익률",
       icon: <BarChart3 className="h-4 w-4 text-muted-foreground" />,
       value: metrics.annualizedReturn,
       color: metrics.annualizedReturn >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive",
-      desc: "Average annual growth"
+      desc: "연평균 성장률"
     },
     {
-      title: "Sharpe Ratio",
+      title: "샤프 지수",
       icon: <Activity className="h-4 w-4 text-muted-foreground" />,
       value: metrics.sharpeRatio,
       color: "",
-      desc: "Risk-adjusted return"
+      desc: "위험 조정 수익률"
     },
     {
-      title: "Max Drawdown",
+      title: "최대 낙폭",
       icon: <AlertTriangle className="h-4 w-4 text-muted-foreground" />,
       value: metrics.maxDrawdown,
       color: "text-destructive",
-      desc: "Largest peak-to-trough decline"
+      desc: "최대 하락률"
     }
   ];
 
   const metricList = [
-    { key: "totalReturn", label: "Total Return" },
-    { key: "annualizedReturn", label: "Annualized Return" },
-    { key: "volatility", label: "Volatility" },
-    { key: "sharpeRatio", label: "Sharpe Ratio" },
-    { key: "sortinoRatio", label: "Sortino Ratio" },
-    { key: "downsideDeviation", label: "Downside Deviation" },
-    { key: "maxDrawdown", label: "Max Drawdown" },
-    { key: "beta", label: "Beta" },
-    { key: "alpha", label: "Alpha" },
-    { key: "rSquare", label: "R²" },
-    { key: "informationRatio", label: "Information Ratio" },
-    { key: "trackingError", label: "Tracking Error" }
+    { key: "totalReturn", label: "총수익률" },
+    { key: "annualizedReturn", label: "연평균 수익률" },
+    { key: "volatility", label: "변동성" },
+    { key: "sharpeRatio", label: "샤프 지수" },
+    { key: "sortinoRatio", label: "소티노 지수" },
+    { key: "downsideDeviation", label: "하방 편차" },
+    { key: "maxDrawdown", label: "최대 낙폭" },
+    { key: "beta", label: "베타" },
+    { key: "alpha", label: "알파" },
+    { key: "rSquare", label: "결정계수 (R²)" },
+    { key: "informationRatio", label: "정보 비율" },
+    { key: "trackingError", label: "추적 오차" }
   ];
 
   function formatValue(val: number | undefined, key: string) {
@@ -205,9 +187,9 @@ export default function AnalysisDashboard() {
         <div className="mb-4 flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => setLocation("/")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            뒤로
           </Button>
-          <h1 className="text-3xl font-bold">Portfolio Analysis</h1>
+          <h1 className="text-3xl font-bold">포트폴리오 분석</h1>
         </div>
         <p className="text-muted-foreground mb-8">
           Analysis Period: {analysis.startDate ? new Date(analysis.startDate).toLocaleDateString() : "N/A"}
@@ -216,7 +198,7 @@ export default function AnalysisDashboard() {
           {" "}({periodYears.toFixed(1)} years)
         </p>
         <Button onClick={() => setLocation("/optimize")} size="lg" className="mb-8">
-          <Target className="h-4 w-4 mr-2" /> Optimize Portfolio
+          <Target className="h-4 w-4 mr-2" /> 포트폴리오 최적화
         </Button>
 
         {/* Portfolio Evaluation Card */}
@@ -247,7 +229,7 @@ export default function AnalysisDashboard() {
               <CardContent>
                 <div className={`text-2xl font-mono font-bold ${item.color}`}>
                   {typeof item.value === "number"
-                    ? `${item.value >= 0 ? "+" : ""}${item.value.toFixed(2)}${item.title.includes("Ratio") ? "" : "%"}`
+                    ? `${item.value >= 0 ? "+" : ""}${item.value.toFixed(2)}${item.title.includes("지수") ? "" : "%"}`
                     : "-"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
@@ -256,14 +238,14 @@ export default function AnalysisDashboard() {
           ))}
         </div>
 
-        <h2 className="text-xl font-semibold mb-2">Performance Metrics Comparison</h2>
+        <h2 className="text-xl font-semibold mb-2">성과 지표 비교</h2>
         <div className="overflow-x-auto mb-8">
           <table className="min-w-full border divide-y divide-gray-300">
             <thead>
               <tr>
-                <th className="px-2 py-2 bg-gray-50 font-semibold">Metric</th>
-                <th className="px-2 py-2 bg-gray-50 font-semibold">My Portfolio</th>
-                <th className="px-2 py-2 bg-gray-50 font-semibold">Portfolio Evaluation</th>
+                <th className="px-2 py-2 bg-gray-50 font-semibold">지표</th>
+                <th className="px-2 py-2 bg-gray-50 font-semibold">내 포트폴리오</th>
+                <th className="px-2 py-2 bg-gray-50 font-semibold">포트폴리오 평가</th>
                 <th className="px-2 py-2 bg-gray-50 font-semibold">S&P 500</th>
               </tr>
             </thead>
@@ -303,11 +285,11 @@ export default function AnalysisDashboard() {
           </table>
         </div>
 
-        <h2 className="text-xl font-semibold mb-2">Sector Distribution</h2>
+        <h2 className="text-xl font-semibold mb-2">섹터 비중</h2>
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Sector Allocation</CardTitle>
+              <CardTitle>섹터 할당</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px] w-full">
@@ -338,7 +320,7 @@ export default function AnalysisDashboard() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Sector Breakdown</CardTitle>
+              <CardTitle>섹터 상세 비중</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -435,56 +417,100 @@ export default function AnalysisDashboard() {
           </Card>
         )}
 
-        <h2 className="text-xl font-semibold mb-2">Cumulative Value Comparison</h2>
-        <div className="mb-8 bg-white rounded shadow p-4">
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="2 2" stroke="#ececec" />
-              <XAxis dataKey="date" tickFormatter={formatDate} minTickGap={20} />
-              <YAxis tickFormatter={formatCurrency} domain={['auto', 'auto']} allowDecimals={false} />
-              <RechartsTooltip content={<CustomTooltip />} />
-              <Legend
-                wrapperStyle={{
-                  fontWeight: "bold",
-                  fontSize: "15px",
-                  marginTop: "10px"
-                }}
-                formatter={(value, entry, index) => {
-                  // entry.color는 실제 그래프 컬러
-                  if (value === "portfolio") return <span style={{ color: "#0066ff" }}>My Portfolio</span>;
-                  if (value === "benchmark") return <span style={{ color: "#50B37B" }}>S&P 500</span>;
-                  return value;
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="portfolio"
-                name="My Portfolio"
-                stroke="#0066ff"
-                strokeWidth={2.7}
-                dot={false}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="benchmark"
-                name="S&P 500"
-                stroke="#50B37B"
-                strokeWidth={2.7}
-                dot={false}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>누적 수익률 비교</CardTitle>
+            <CardDescription>
+              초기 투자금 $10,000 기준, 내 포트폴리오와 S&P 500의 성과 비교
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={chartData}>
+                <defs>
+                  <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="benchmarkGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatDate}
+                  minTickGap={30}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
+                />
+                <YAxis
+                  tickFormatter={formatCurrency}
+                  domain={['auto', 'auto']}
+                  allowDecimals={false}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
+                />
+                <RechartsTooltip
+                  cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="p-4 rounded-lg border bg-background/95 shadow-lg backdrop-blur-sm">
+                          <p className="font-medium text-foreground mb-2">{formatDate(label || "")}</p>
+                          {payload.map((p, i) => (
+                            <div key={i} className="flex items-center justify-between gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                                <span className="text-muted-foreground">{p.name}:</span>
+                              </div>
+                              <span className="font-mono font-semibold">{formatCurrency(p.value as number)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="portfolio"
+                  name="내 포트폴리오"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6, style: { fill: "hsl(var(--background))", stroke: "hsl(var(--primary))" } }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="benchmark"
+                  name="S&P 500"
+                  stroke="#22c55e" // A vivid green
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6, style: { fill: "hsl(var(--background))", stroke: "#22c55e" } }}
+                />
+                <Area type="monotone" dataKey="portfolio" stroke="none" fillOpacity={1} fill="url(#portfolioGradient)" />
+                <Area type="monotone" dataKey="benchmark" stroke="none" fillOpacity={1} fill="url(#benchmarkGradient)" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-        <h2 className="text-xl font-semibold mb-2">Annual Returns</h2>
+        <h2 className="text-xl font-semibold mb-2">연도별 수익률</h2>
         <div className="overflow-x-auto mb-8">
           <table className="min-w-full border">
             <thead>
               <tr>
-                <th className="px-2 py-2">Year</th>
-                <th className="px-2 py-2">Portfolio (%)</th>
+                <th className="px-2 py-2">연도</th>
+                <th className="px-2 py-2">포트폴리오 (%)</th>
                 <th className="px-2 py-2">S&P 500 (%)</th>
               </tr>
             </thead>
