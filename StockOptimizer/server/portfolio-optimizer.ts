@@ -271,14 +271,19 @@ export function optimizePortfolio(
     }
   }
 
+
   const universeTickers = Array.from(alignedData.keys());
-  const currentTickers = currentHoldings.map(h => h.ticker).filter(t => alignedData.has(t));
+
+  // Use sector-balanced holdings as the baseline if rebalancing was applied
+  // This ensures that stocks added during sector rebalancing are considered for retention
+  const baselineForOptimization = (input.rebalanceSectors && adjustedHoldings) ? adjustedHoldings : currentHoldings;
+  const baselineTickers = baselineForOptimization.map(h => h.ticker).filter(t => alignedData.has(t));
 
   // CONSTRAINT: Do not remove existing holdings UNLESS they are performing very poorly.
-  // Filter current tickers to find "good enough" ones to keep.
+  // Filter baseline tickers to find "good enough" ones to keep.
   const mustIncludeTickers: string[] = [];
 
-  currentTickers.forEach(ticker => {
+  baselineTickers.forEach(ticker => {
     // Calculate metrics for this single stock
     const singleStockHolding = [{ ticker, allocation: 100 }];
     const singleStockValues = calculatePortfolioValues(alignedData, singleStockHolding);
@@ -292,12 +297,12 @@ export function optimizePortfolio(
   });
 
   // If we filtered out everything (rare), keep the best one at least
-  if (mustIncludeTickers.length === 0 && currentTickers.length > 0) {
+  if (mustIncludeTickers.length === 0 && baselineTickers.length > 0) {
     // Find best of the worst
-    let bestTicker = currentTickers[0];
+    let bestTicker = baselineTickers[0];
     let bestSharpe = -Infinity;
 
-    currentTickers.forEach(ticker => {
+    baselineTickers.forEach(ticker => {
       const singleStockHolding = [{ ticker, allocation: 100 }];
       const singleStockValues = calculatePortfolioValues(alignedData, singleStockHolding);
       const metrics = calculateMetrics(singleStockValues, years);
@@ -310,7 +315,7 @@ export function optimizePortfolio(
   }
 
   // CONSTRAINT: Max size = 2x current size (or reasonable cap)
-  const maxHoldingsCount = Math.min(Math.max(currentTickers.length * 2, 15), 50); // At least 15, max 50, usually 2x current
+  const maxHoldingsCount = Math.min(Math.max(baselineTickers.length * 2, 15), 50); // At least 15, max 50, usually 2x current
 
   let targetAdjustments: ReturnType<typeof getTargetSectorAdjustments> = {};
 
@@ -343,9 +348,9 @@ export function optimizePortfolio(
       if (input.rebalanceSectors && adjustedHoldings && Math.random() < 0.5) {
         candidateHoldings = mutatePortfolio(adjustedHoldings, 0.1); // 10% mutation
       } else if (input.rebalanceSectors && Object.keys(targetAdjustments).length > 0) {
-        candidateHoldings = generateSectorBalancedPortfolio(currentTickers, targetAdjustments, 0.7, mustIncludeTickers, maxHoldingsCount);
+        candidateHoldings = generateSectorBalancedPortfolio(baselineTickers, targetAdjustments, 0.7, mustIncludeTickers, maxHoldingsCount);
       } else {
-        candidateHoldings = generateRandomPortfolio(currentTickers, undefined, mustIncludeTickers);
+        candidateHoldings = generateRandomPortfolio(baselineTickers, undefined, mustIncludeTickers);
       }
 
       candidateHoldings = adjustPortfolioForRisk(candidateHoldings, input.riskTolerance);
@@ -473,10 +478,15 @@ export function optimizePortfolio(
     bestCandidate = viableCandidates[0];
   }
 
+  // Calculate optimized holdings with proper change baseline
+  // If sector rebalancing was applied, changes should be relative to the sector-balanced portfolio
+  // Otherwise, changes are relative to the original portfolio
+  const baselineHoldings = (input.rebalanceSectors && adjustedHoldings) ? adjustedHoldings : currentHoldings;
+
   const optimizedHoldings: OptimizedHolding[] = bestCandidate.holdings.map((holding) => {
-    const currentHolding = currentHoldings.find((h) => h.ticker === holding.ticker);
-    const currentAllocation = currentHolding?.allocation || 0;
-    const change = holding.allocation - currentAllocation;
+    const baselineHolding = baselineHoldings.find((h) => h.ticker === holding.ticker);
+    const baselineAllocation = baselineHolding?.allocation || 0;
+    const change = holding.allocation - baselineAllocation;
 
     return {
       ...holding,

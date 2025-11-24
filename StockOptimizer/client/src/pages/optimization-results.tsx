@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ArrowRight, TrendingUp, CheckCircle2, XCircle, Activity, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, TrendingUp, CheckCircle2, XCircle, Activity, Loader2, Download, Info } from "lucide-react";
 import { type OptimizationResult, type PortfolioInput } from "@shared/schema";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis, PieChart, Pie, Cell } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
@@ -127,52 +127,100 @@ export default function OptimizationResults() {
   const formatPercent = (val: number) => `${val >= 0 ? "+" : ""}${val.toFixed(2)}%`;
   const improvement = result.optimized.metrics.sharpeRatio - result.current.metrics.sharpeRatio;
 
+  const downloadExcel = () => {
+    if (!result) return;
+
+    // 1. Metrics Row
+    const metricsHeader = ["Metric", "Current", "Optimized", "Change"];
+    const metricsRows = [
+      ["Annual Return", formatPercent(result.current.metrics.annualizedReturn), formatPercent(result.optimized.metrics.annualizedReturn), formatPercent(result.optimized.metrics.annualizedReturn - result.current.metrics.annualizedReturn)],
+      ["Sharpe Ratio", result.current.metrics.sharpeRatio.toFixed(2), result.optimized.metrics.sharpeRatio.toFixed(2), (result.optimized.metrics.sharpeRatio - result.current.metrics.sharpeRatio).toFixed(2)],
+      ["Volatility", formatPercent(result.current.metrics.volatility), formatPercent(result.optimized.metrics.volatility), formatPercent(result.optimized.metrics.volatility - result.current.metrics.volatility)],
+      ["Max Drawdown", formatPercent(result.current.metrics.maxDrawdown), formatPercent(result.optimized.metrics.maxDrawdown), formatPercent(result.optimized.metrics.maxDrawdown - result.current.metrics.maxDrawdown)]
+    ];
+
+    // 2. Holdings Row
+    const holdingsHeader = ["Ticker", "Current Allocation", "Optimized Allocation", "Change"];
+    const holdingsRows = result.optimized.holdings.map(h => {
+      const current = result.current.holdings.find(c => c.ticker === h.ticker)?.allocation || 0;
+      return [h.ticker, current.toFixed(2) + "%", h.allocation.toFixed(2) + "%", h.change.toFixed(2) + "%"];
+    });
+
+    // Combine into CSV
+    const csvContent = [
+      "Performance Metrics",
+      metricsHeader.join(","),
+      ...metricsRows.map(r => r.join(",")),
+      "",
+      "Portfolio Holdings",
+      holdingsHeader.join(","),
+      ...holdingsRows.map(r => r.join(","))
+    ].join("\n");
+
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "optimized_portfolio.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl mx-auto py-8 px-4">
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-2">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/analysis")} data-testid="button-back">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => setLocation("/analysis")} data-testid="button-back">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <h1 className="text-3xl font-bold">Portfolio Optimization</h1>
+            </div>
+            <Button variant="outline" onClick={downloadExcel}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Excel
             </Button>
-            <h1 className="text-3xl font-bold">Portfolio Optimization</h1>
           </div>
           <p className="text-muted-foreground">
             Optimized for {portfolioInput.riskTolerance} risk tolerance with {portfolioInput.targetReturn}% target return
           </p>
         </div>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Optimization Summary</CardTitle>
-            <CardDescription>
+        <Card className="mb-8 border-2 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
+            <CardTitle className="text-2xl">Optimization Summary</CardTitle>
+            <CardDescription className="text-base">
               Improved Sharpe Ratio by {improvement >= 0 ? "+" : ""}{improvement.toFixed(2)} ({((improvement / result.current.metrics.sharpeRatio) * 100).toFixed(1)}%)
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 rounded-lg bg-muted">
-                <div className="text-sm text-muted-foreground mb-1">Return Improvement</div>
-                <div className={`text-xl font-mono font-bold ${result.optimized.metrics.annualizedReturn >= result.current.metrics.annualizedReturn ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+              <div className="text-center p-5 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800">
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Return Improvement</div>
+                <div className={`text-2xl font-mono font-bold ${result.optimized.metrics.annualizedReturn >= result.current.metrics.annualizedReturn ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {formatPercent(result.optimized.metrics.annualizedReturn - result.current.metrics.annualizedReturn)}
                 </div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted">
-                <div className="text-sm text-muted-foreground mb-1">Volatility Change</div>
-                <div className={`text-xl font-mono font-bold ${result.optimized.metrics.volatility <= result.current.metrics.volatility ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+              <div className="text-center p-5 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border border-blue-200 dark:border-blue-800">
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Volatility Change</div>
+                <div className={`text-2xl font-mono font-bold ${result.optimized.metrics.volatility <= result.current.metrics.volatility ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {formatPercent(result.optimized.metrics.volatility - result.current.metrics.volatility)}
                 </div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted">
-                <div className="text-sm text-muted-foreground mb-1">Sharpe Improvement</div>
-                <div className={`text-xl font-mono font-bold ${improvement >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+              <div className="text-center p-5 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200 dark:border-purple-800">
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Sharpe Improvement</div>
+                <div className={`text-2xl font-mono font-bold ${improvement >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {improvement >= 0 ? "+" : ""}{improvement.toFixed(2)}
                 </div>
               </div>
-              <div className="text-center p-4 rounded-lg bg-muted">
-                <div className="text-sm text-muted-foreground mb-1">Drawdown Change</div>
-                <div className={`text-xl font-mono font-bold ${result.optimized.metrics.maxDrawdown >= result.current.metrics.maxDrawdown ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+              <div className="text-center p-5 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border border-orange-200 dark:border-orange-800">
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Drawdown Change</div>
+                <div className={`text-2xl font-mono font-bold ${result.optimized.metrics.maxDrawdown >= result.current.metrics.maxDrawdown ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                   {formatPercent(result.optimized.metrics.maxDrawdown - result.current.metrics.maxDrawdown)}
                 </div>
               </div>
@@ -182,44 +230,44 @@ export default function OptimizationResults() {
 
         {/* Sector Balance Comparison - only show if rebalancing was applied */}
         {result.sectorRebalancingApplied && result.currentSectorBalance && result.optimized.sectorBalanceReport && (
-          <Card className="mb-8 border-2 border-blue-500">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-500" />
+          <Card className="mb-8 border-2 border-blue-500 shadow-lg bg-gradient-to-br from-blue-50/50 to-cyan-50/50 dark:from-blue-950/20 dark:to-cyan-950/20">
+            <CardHeader className="bg-gradient-to-r from-blue-100/50 to-cyan-100/50 dark:from-blue-900/20 dark:to-cyan-900/20">
+              <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                <Activity className="h-5 w-5 text-blue-600" />
                 섹터 리밸런싱 결과 (중간 단계)
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-blue-700 dark:text-blue-300">
                 최적화 전, 섹터 밸런스를 맞춘 포트폴리오입니다.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Sector Balanced Portfolio Metrics */}
                 <div className="space-y-4">
-                  <div className="font-semibold text-sm text-muted-foreground">섹터 조정 포트폴리오 성과</div>
+                  <div className="font-semibold text-sm text-blue-900 dark:text-blue-100 mb-3">섹터 조정 포트폴리오 성과</div>
                   {result.sectorBalancedPortfolio ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <div className="text-xs text-muted-foreground">Annual Return</div>
-                        <div className="font-mono font-bold text-blue-700">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/40 rounded-xl border border-blue-200 dark:border-blue-700">
+                        <div className="text-xs text-blue-700 dark:text-blue-300 font-semibold mb-1">Annual Return</div>
+                        <div className="font-mono font-bold text-lg text-blue-900 dark:text-blue-100">
                           {formatPercent(result.sectorBalancedPortfolio.metrics.annualizedReturn)}
                         </div>
                       </div>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <div className="text-xs text-muted-foreground">Sharpe Ratio</div>
-                        <div className="font-mono font-bold text-blue-700">
+                      <div className="p-4 bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/40 dark:to-cyan-800/40 rounded-xl border border-cyan-200 dark:border-cyan-700">
+                        <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold mb-1">Sharpe Ratio</div>
+                        <div className="font-mono font-bold text-lg text-cyan-900 dark:text-cyan-100">
                           {result.sectorBalancedPortfolio.metrics.sharpeRatio.toFixed(2)}
                         </div>
                       </div>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <div className="text-xs text-muted-foreground">Volatility</div>
-                        <div className="font-mono font-bold text-blue-700">
+                      <div className="p-4 bg-gradient-to-br from-teal-100 to-teal-50 dark:from-teal-900/40 dark:to-teal-800/40 rounded-xl border border-teal-200 dark:border-teal-700">
+                        <div className="text-xs text-teal-700 dark:text-teal-300 font-semibold mb-1">Volatility</div>
+                        <div className="font-mono font-bold text-lg text-teal-900 dark:text-teal-100">
                           {result.sectorBalancedPortfolio.metrics.volatility.toFixed(2)}%
                         </div>
                       </div>
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <div className="text-xs text-muted-foreground">Sector Score</div>
-                        <div className="font-mono font-bold text-blue-700">
+                      <div className="p-4 bg-gradient-to-br from-sky-100 to-sky-50 dark:from-sky-900/40 dark:to-sky-800/40 rounded-xl border border-sky-200 dark:border-sky-700">
+                        <div className="text-xs text-sky-700 dark:text-sky-300 font-semibold mb-1">Sector Score</div>
+                        <div className="font-mono font-bold text-lg text-sky-900 dark:text-sky-100">
                           {result.optimized.sectorBalanceReport.overallScore}/100
                         </div>
                       </div>
@@ -265,27 +313,48 @@ export default function OptimizationResults() {
                 </div>
 
                 {/* Pie Chart of Sector Balanced Portfolio */}
-                <div className="h-[300px] w-full">
-                  <div className="font-semibold text-sm text-muted-foreground mb-2 text-center">섹터 조정 후 종목 비중</div>
+                <div className="h-[320px] w-full">
+                  <div className="font-semibold text-sm text-blue-900 dark:text-blue-100 mb-3 text-center">섹터 조정 후 종목 비중</div>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
+                      <defs>
+                        {(result.sectorAdjustedHoldings || []).map((entry, index) => (
+                          <linearGradient key={`gradient-${index}`} id={`pieGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={`hsl(${(index * 45) % 360}, 70%, 55%)`} stopOpacity={0.9}></stop>
+                            <stop offset="95%" stopColor={`hsl(${(index * 45) % 360}, 70%, 45%)`} stopOpacity={0.8}></stop>
+                          </linearGradient>
+                        ))}
+                      </defs>
                       <Pie
                         data={result.sectorAdjustedHoldings || []}
                         dataKey="allocation"
                         nameKey="ticker"
                         cx="50%"
                         cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
+                        outerRadius={90}
+                        innerRadius={45}
+                        paddingAngle={2}
                         label={({ ticker, allocation }) => `${ticker} ${allocation.toFixed(1)}%`}
+                        labelLine={{ stroke: 'hsl(var(--foreground))', strokeWidth: 1 }}
                       >
                         {(result.sectorAdjustedHoldings || []).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={`hsl(${index * 45 % 360}, 70%, 50%)`} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={`url(#pieGradient-${index})`}
+                            stroke="white"
+                            strokeWidth={2}
+                          />
                         ))}
                       </Pie>
                       <Tooltip
                         formatter={(value: number) => `${value.toFixed(2)}%`}
-                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '12px',
+                          padding: '12px',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -374,7 +443,17 @@ export default function OptimizationResults() {
                 <div className="text-sm font-semibold mb-2">Holdings</div>
                 {result.current.holdings.map((holding, idx) => (
                   <div key={idx} className="flex items-center justify-between py-1 text-sm">
-                    <span className="font-mono uppercase">{holding.ticker}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono uppercase">{holding.ticker}</span>
+                      <a
+                        href={`https://finance.yahoo.com/quote/${holding.ticker}/profile/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Info className="h-3 w-3" />
+                      </a>
+                    </div>
                     <span className="font-mono text-muted-foreground">{holding.allocation.toFixed(1)}%</span>
                   </div>
                 ))}
@@ -414,7 +493,17 @@ export default function OptimizationResults() {
                   <div className="text-sm font-semibold mb-2 text-blue-900">Holdings</div>
                   {result.sectorBalancedPortfolio.holdings.slice(0, 8).map((holding, idx) => (
                     <div key={idx} className="flex items-center justify-between py-1 text-sm">
-                      <span className="font-mono uppercase">{holding.ticker}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono uppercase">{holding.ticker}</span>
+                        <a
+                          href={`https://finance.yahoo.com/quote/${holding.ticker}/profile/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Info className="h-3 w-3" />
+                        </a>
+                      </div>
                       <span className="font-mono text-muted-foreground">{holding.allocation.toFixed(1)}%</span>
                     </div>
                   ))}
@@ -472,7 +561,17 @@ export default function OptimizationResults() {
                 <div className="text-sm font-semibold mb-2">Holdings</div>
                 {result.optimized.holdings.map((holding, idx) => (
                   <div key={idx} className="flex items-center justify-between py-1 text-sm border-b last:border-0 border-dashed">
-                    <span className="font-mono font-semibold uppercase">{holding.ticker}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono font-semibold uppercase">{holding.ticker}</span>
+                      <a
+                        href={`https://finance.yahoo.com/quote/${holding.ticker}/profile/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Info className="h-3 w-3" />
+                      </a>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="font-mono">{holding.allocation.toFixed(1)}%</span>
                       {holding.change !== 0 && (
@@ -517,8 +616,19 @@ export default function OptimizationResults() {
                     </Badge>
                   </div>
                   <div className="ml-7 space-y-1">
-                    <div className="text-sm">
-                      <span className="font-mono font-semibold uppercase">{rec.ticker}</span>:{" "}
+                    <div className="text-sm flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono font-semibold uppercase">{rec.ticker}</span>
+                        <a
+                          href={`https://finance.yahoo.com/quote/${rec.ticker}/profile/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Info className="h-3 w-3" />
+                        </a>
+                      </div>
+                      <span>:</span>
                       <span className="font-mono">{rec.currentAllocation.toFixed(1)}%</span>
                       <ArrowRight className="inline h-3 w-3 mx-2" />
                       <span className="font-mono font-semibold">{rec.recommendedAllocation.toFixed(1)}%</span>
@@ -531,51 +641,101 @@ export default function OptimizationResults() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-2">
           <CardHeader>
-            <CardTitle>Efficient Frontier</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Efficient Frontier
+            </CardTitle>
             <CardDescription>
-              Risk-return tradeoff visualization
+              Risk-return tradeoff visualization - Higher points indicate better returns
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <ResponsiveContainer width="100%" height={450}>
+              <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+                <defs>
+                  <linearGradient id="frontierGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}></stop>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05}></stop>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                  opacity={0.2}
+                  vertical={false}
+                />
                 <XAxis
                   type="number"
                   dataKey="volatility"
                   name="Volatility"
                   unit="%"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  label={{ value: "Volatility (%)", position: "insideBottom", offset: -10 }}
+                  stroke="hsl(var(--foreground))"
+                  fontSize={13}
+                  fontWeight={500}
+                  tickLine={false}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  label={{
+                    value: "Volatility (%)",
+                    position: "insideBottom",
+                    offset: -15,
+                    style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
+                  }}
                 />
                 <YAxis
                   type="number"
                   dataKey="return"
                   name="Return"
                   unit="%"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  label={{ value: "Annual Return (%)", angle: -90, position: "insideLeft" }}
+                  stroke="hsl(var(--foreground))"
+                  fontSize={13}
+                  fontWeight={500}
+                  tickLine={false}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  label={{
+                    value: "Annual Return (%)",
+                    angle: -90,
+                    position: "insideLeft",
+                    style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
+                  }}
                 />
                 <Tooltip
-                  cursor={{ strokeDasharray: "3 3" }}
+                  cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))", strokeWidth: 1.5 }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       let label = "Frontier Point";
-                      if (data.isCurrent) label = "Current Portfolio";
-                      else if (data.isOptimal) label = "Optimized Portfolio";
-                      else if (data.isSectorCompliant) label = "Sector Balanced";
+                      let bgColor = "bg-background";
+                      let borderColor = "border-border";
+
+                      if (data.isCurrent) {
+                        label = "Current Portfolio";
+                        borderColor = "border-red-500";
+                      } else if (data.isOptimal) {
+                        label = "Optimized Portfolio";
+                        borderColor = "border-green-500";
+                      } else if (data.isSectorCompliant) {
+                        label = "Sector Balanced";
+                        borderColor = "border-blue-500";
+                      }
 
                       return (
-                        <div className="rounded-lg border bg-popover p-3 shadow-md">
-                          <div className="font-semibold mb-2">{label}</div>
-                          <div className="space-y-1 text-sm">
-                            <div>Return: <span className="font-mono font-semibold">{data.return.toFixed(2)}%</span></div>
-                            <div>Volatility: <span className="font-mono font-semibold">{data.volatility.toFixed(2)}%</span></div>
+                        <div className={`rounded-xl border-2 ${borderColor} ${bgColor} p-4 shadow-xl backdrop-blur-sm bg-opacity-95`}>
+                          <div className="font-bold mb-2 text-sm">{label}</div>
+                          <div className="space-y-1.5 text-sm">
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Return:</span>
+                              <span className="font-mono font-semibold text-green-600 dark:text-green-400">
+                                {data.return.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Volatility:</span>
+                              <span className="font-mono font-semibold text-orange-600 dark:text-orange-400">
+                                {data.volatility.toFixed(2)}%
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -586,31 +746,63 @@ export default function OptimizationResults() {
                 <Scatter
                   name="Efficient Frontier"
                   data={result.efficientFrontier.filter(p => !p.isCurrent && !p.isOptimal && !p.isSectorCompliant)}
-                  fill="hsl(var(--muted-foreground))"
-                  opacity={0.4}
+                  fill="url(#frontierGradient)"
+                  opacity={0.6}
+                  shape="circle"
                 />
                 <Scatter
                   name="Current"
                   data={result.efficientFrontier.filter(p => p.isCurrent)}
-                  fill="hsl(var(--destructive))"
-                  shape="star"
-                  r={6}
+                  fill="#ef4444"
+                  shape={(props) => {
+                    const { cx, cy } = props;
+                    return (
+                      <g>
+                        <circle cx={cx} cy={cy} r={8} fill="#ef4444" opacity={0.2} />
+                        <circle cx={cx} cy={cy} r={5} fill="#ef4444" stroke="#fff" strokeWidth={2} />
+                      </g>
+                    );
+                  }}
                 />
                 <Scatter
                   name="Sector Balanced"
                   data={result.efficientFrontier.filter(p => p.isSectorCompliant)}
-                  fill="#3b82f6" // Blue
-                  shape="triangle"
-                  r={6}
+                  fill="#3b82f6"
+                  shape={(props) => {
+                    const { cx, cy } = props;
+                    return (
+                      <g>
+                        <circle cx={cx} cy={cy} r={8} fill="#3b82f6" opacity={0.2} />
+                        <polygon
+                          points={`${cx},${cy - 5} ${cx + 4.5},${cy + 3} ${cx - 4.5},${cy + 3}`}
+                          fill="#3b82f6"
+                          stroke="#fff"
+                          strokeWidth={2}
+                        />
+                      </g>
+                    );
+                  }}
                 />
                 <Scatter
                   name="Optimized"
                   data={result.efficientFrontier.filter(p => p.isOptimal)}
-                  fill="hsl(var(--chart-2))"
-                  shape="star"
-                  r={8}
+                  fill="#22c55e"
+                  shape={(props) => {
+                    const { cx, cy } = props;
+                    return (
+                      <g>
+                        <circle cx={cx} cy={cy} r={10} fill="#22c55e" opacity={0.2} />
+                        <circle cx={cx} cy={cy} r={6} fill="#22c55e" stroke="#fff" strokeWidth={2.5} />
+                        <circle cx={cx} cy={cy} r={2.5} fill="#fff" />
+                      </g>
+                    );
+                  }}
                 />
-                <Legend />
+                <Legend
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="circle"
+                  formatter={(value) => <span className="text-sm font-medium">{value}</span>}
+                />
               </ScatterChart>
             </ResponsiveContainer>
           </CardContent>

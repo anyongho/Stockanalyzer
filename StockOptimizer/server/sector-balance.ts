@@ -319,7 +319,10 @@ export function applySectorBalanceAdjustments(
 
 
 
-    let adjustedHoldings = [...holdings];
+
+    // CRITICAL: Deep copy holdings to avoid mutating the original array
+    // Shallow copy [...holdings] would still share the same holding objects!
+    let adjustedHoldings = holdings.map(h => ({ ...h }));
     const MAX_ITERATIONS = 20;
     let iteration = 0;
 
