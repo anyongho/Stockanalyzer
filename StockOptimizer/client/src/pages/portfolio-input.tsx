@@ -77,6 +77,14 @@ export default function PortfolioInput() {
   // Watch holdings to calculate totals
   const holdings = form.watch("holdings");
 
+  // Validate tickers against available companies
+  const availableTickers = companyData?.map(c => c.ticker.toUpperCase()) || [];
+  const invalidTickers = holdings
+    .filter(h => h.ticker && h.ticker.trim() !== "")
+    .filter(h => !availableTickers.includes(h.ticker.toUpperCase()))
+    .map(h => h.ticker.toUpperCase());
+  const hasInvalidTickers = invalidTickers.length > 0;
+
   // Calculate total allocation or amount
   const totalValue = holdings.reduce((sum, h) => {
     // In amount mode, we treat 'allocation' field as amount temporarily
@@ -221,10 +229,18 @@ export default function PortfolioInput() {
                                   <Input
                                     {...field}
                                     placeholder="AAPL"
-                                    className="uppercase font-mono"
+                                    className={`uppercase font-mono ${field.value && !availableTickers.includes(field.value.toUpperCase())
+                                        ? "border-red-500 focus-visible:ring-red-500"
+                                        : ""
+                                      }`}
                                     onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                                   />
                                 </FormControl>
+                                {field.value && !availableTickers.includes(field.value.toUpperCase()) && (
+                                  <p className="text-sm font-medium text-red-500 mt-1">
+                                    잘못된 티커입니다
+                                  </p>
+                                )}
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -386,7 +402,7 @@ export default function PortfolioInput() {
                     type="submit"
                     size="lg"
                     className="w-full md:w-auto px-16 py-6 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
-                    disabled={isAnalyzing || (!useAmountInput && Math.abs(totalValue - 100) > 0.01)}
+                    disabled={isAnalyzing || hasInvalidTickers || (!useAmountInput && Math.abs(totalValue - 100) > 0.01)}
                   >
                     {isAnalyzing ? "분석 중..." : "포트폴리오 분석"}
                   </Button>                        </div>
