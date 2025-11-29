@@ -149,7 +149,7 @@ export default function AnalysisDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
         <div className="container max-w-7xl mx-auto py-8 px-4">
           <div className="mb-8">
             <Skeleton className="h-8 w-64 mb-2" />
@@ -166,8 +166,8 @@ export default function AnalysisDashboard() {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20 flex items-center justify-center">
+        <Card className="max-w-md shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Analysis Failed</CardTitle>
           </CardHeader>
@@ -182,27 +182,27 @@ export default function AnalysisDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-7xl mx-auto py-8 px-4">
-        <div className="mb-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation("/")}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
+      <div className="container max-w-7xl mx-auto py-12 px-4">
+        <div className="mb-6 flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => setLocation("/")} className="hover:bg-white/50 dark:hover:bg-gray-800/50">
             <ArrowLeft className="h-4 w-4 mr-2" />
             뒤로
           </Button>
-          <h1 className="text-3xl font-bold">포트폴리오 분석</h1>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">포트폴리오 분석</h1>
         </div>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-gray-600 dark:text-gray-300 mb-6">
           Analysis Period: {analysis.startDate ? new Date(analysis.startDate).toLocaleDateString() : "N/A"}
           {" - "}
           {analysis.endDate ? new Date(analysis.endDate).toLocaleDateString() : "N/A"}
           {" "}({periodYears.toFixed(1)} years)
         </p>
-        <Button onClick={() => setLocation("/optimize")} size="lg" className="mb-8">
+        <Button onClick={() => setLocation("/optimize")} size="lg" className="mb-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all">
           <Target className="h-4 w-4 mr-2" /> 포트폴리오 최적화
         </Button>
 
         {/* Portfolio Evaluation Card */}
-        <Card className="mb-8 border-2 border-primary/20">
+        <Card className="mb-8 border-2 border-blue-200 dark:border-blue-800 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader>
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -221,7 +221,7 @@ export default function AnalysisDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {coreCards.map((item, i) => (
-            <Card key={i}>
+            <Card key={i} className="shadow-lg hover:shadow-xl transition-all bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
                 {item.icon}
@@ -287,7 +287,7 @@ export default function AnalysisDashboard() {
 
         <h2 className="text-xl font-semibold mb-2">섹터 비중</h2>
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+          <Card className="shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>섹터 할당</CardTitle>
             </CardHeader>
@@ -318,7 +318,7 @@ export default function AnalysisDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>섹터 상세 비중</CardTitle>
             </CardHeader>
@@ -343,7 +343,7 @@ export default function AnalysisDashboard() {
 
         {/* Sector Balance Analysis */}
         {sectorBalanceReport && (
-          <Card className="mb-8">
+          <Card className="mb-8 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
@@ -417,7 +417,7 @@ export default function AnalysisDashboard() {
           </Card>
         )}
 
-        <Card className="mb-8">
+        <Card className="mb-8 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>누적 수익률 비교</CardTitle>
             <CardDescription>

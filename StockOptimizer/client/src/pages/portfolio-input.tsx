@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HeroIllustration } from "@/components/HeroIllustration";
+import heroImage from "../hero-image.jpg";
 
 interface Company {
   ticker: string;
@@ -161,12 +161,12 @@ export default function PortfolioInput() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-7xl mx-auto py-8 px-4">
-        <div className="mb-8 text-center flex flex-col items-center">
-          <HeroIllustration className="w-64 h-48 mb-6" />
-          <h1 className="text-4xl font-bold mb-3">포트폴리오 분석기</h1>
-          <p className="text-lg text-muted-foreground">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
+      <div className="container max-w-7xl mx-auto py-12 px-4">
+        <div className="mb-12 text-center flex flex-col items-center">
+          <img src={heroImage} alt="포트폴리오 분석" className="w-full max-w-3xl h-80 object-cover rounded-2xl shadow-2xl mb-8 ring-1 ring-black/5" />
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">포트폴리오 분석기</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl">
             고급 지표를 사용하여 미국 주식 포트폴리오를 분석하고 최적화하세요
           </p>
         </div>
@@ -179,17 +179,17 @@ export default function PortfolioInput() {
                 <Card
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
-                  className="border-dashed border-2 border-transparent hover:border-primary/20 transition-colors"
+                  className="border-dashed border-2 border-transparent hover:border-primary/20 transition-all shadow-lg hover:shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5" />
-                        Portfolio Holdings
+                        포트폴리오 보유 종목
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <Label htmlFor="input-mode" className="text-sm font-medium">
-                          {useAmountInput ? "Amount ($)" : "Percentage (%)"}
+                          {useAmountInput ? "금액 ($)" : "비율 (%)"}
                         </Label>
                         <Switch
                           id="input-mode"
@@ -200,14 +200,14 @@ export default function PortfolioInput() {
                     </div>
                     <CardDescription>
                       {useAmountInput
-                        ? "Enter the investment amount for each stock. We'll calculate the weights."
-                        : "Enter allocation percentages. Total must equal 100%."}
+                        ? "각 종목의 투자 금액을 입력하세요. 자동으로 비중을 계산합니다."
+                        : "배분 비율을 입력하세요. 총합은 100%여야 합니다."}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-4">
                       {fields.map((field, index) => (
-                        <div key={field.id} className="flex items-start gap-4 p-2 rounded-lg hover:bg-accent/50 transition-colors group">
+                        <div key={field.id} className="flex items-start gap-4 p-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 transition-all group">
                           <div className="mt-3 text-muted-foreground cursor-grab active:cursor-grabbing">
                             <GripVertical className="h-4 w-4" />
                           </div>
@@ -216,7 +216,7 @@ export default function PortfolioInput() {
                             name={`holdings.${index}.ticker`}
                             render={({ field }) => (
                               <FormItem className="flex-1">
-                                {index === 0 && <FormLabel>Ticker Symbol</FormLabel>}
+                                {index === 0 && <FormLabel>티커 심볼</FormLabel>}
                                 <FormControl>
                                   <Input
                                     {...field}
@@ -234,7 +234,7 @@ export default function PortfolioInput() {
                             name={`holdings.${index}.allocation`}
                             render={({ field }) => (
                               <FormItem className="w-40">
-                                {index === 0 && <FormLabel>{useAmountInput ? "Amount" : "Allocation %"}</FormLabel>}
+                                {index === 0 && <FormLabel>{useAmountInput ? "금액" : "배분 비율 %"}</FormLabel>}
                                 <FormControl>
                                   <div className="relative">
                                     <Input
@@ -280,11 +280,11 @@ export default function PortfolioInput() {
                         onClick={() => append({ ticker: "", allocation: 0 })}
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Holding
+                        종목 추가
                       </Button>
                       <div className="text-right">
                         <div className="text-sm font-mono">
-                          Total: <span className={
+                          합계: <span className={
                             (!useAmountInput && Math.abs(totalValue - 100) < 0.01) || (useAmountInput && totalValue > 0)
                               ? "text-green-600 dark:text-green-400 font-semibold"
                               : "text-destructive font-semibold"
@@ -297,7 +297,7 @@ export default function PortfolioInput() {
                         </div>
                         {useAmountInput && (
                           <div className="text-xs text-muted-foreground mt-1">
-                            Weighted average calculation enabled
+                            가중 평균 계산 활성화
                           </div>
                         )}
                       </div>
@@ -305,14 +305,14 @@ export default function PortfolioInput() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Shield className="h-5 w-5" />
-                      Risk Profile
+                      위험 프로필
                     </CardTitle>
                     <CardDescription>
-                      Help us understand your investment preferences
+                      투자 성향을 알려주세요
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -321,7 +321,7 @@ export default function PortfolioInput() {
                       name="riskTolerance"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Risk Tolerance</FormLabel>
+                          <FormLabel>위험 감수도</FormLabel>
                           <FormControl>
                             <RadioGroup
                               onValueChange={field.onChange}
@@ -332,18 +332,18 @@ export default function PortfolioInput() {
                                 <label
                                   key={risk}
                                   htmlFor={risk}
-                                  className={`flex items-start space-x-3 space-y-0 rounded-lg border-2 p-4 cursor-pointer transition-colors ${field.value === risk
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:bg-accent"
+                                  className={`flex items-start space-x-3 space-y-0 rounded-xl border-2 p-5 cursor-pointer transition-all ${field.value === risk
+                                    ? "border-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 shadow-md"
+                                    : "border-gray-200 dark:border-gray-700 hover:border-blue-300 hover:shadow-sm"
                                     }`}
                                 >
                                   <RadioGroupItem value={risk} id={risk} />
                                   <div className="flex-1 capitalize">
                                     <div className="font-semibold mb-1">{risk}</div>
                                     <div className="text-sm text-muted-foreground">
-                                      {risk === "conservative" && "Prioritize capital preservation"}
-                                      {risk === "moderate" && "Balance growth and stability"}
-                                      {risk === "aggressive" && "Seek maximum growth"}
+                                      {risk === "conservative" && "자본 보존 우선"}
+                                      {risk === "moderate" && "성장과 안정성 균형"}
+                                      {risk === "aggressive" && "최대 성장 추구"}
                                     </div>
                                   </div>
                                 </label>
@@ -362,7 +362,7 @@ export default function PortfolioInput() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
                             <Target className="h-4 w-4" />
-                            Target Annual Return: <span className="font-mono font-semibold">{field.value}%</span>
+                            목표 연간 수익률: <span className="font-mono font-semibold">{field.value}%</span>
                           </FormLabel>
                           <FormControl>
                             <Slider
@@ -385,7 +385,7 @@ export default function PortfolioInput() {
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full md:w-auto px-12"
+                    className="w-full md:w-auto px-16 py-6 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all"
                     disabled={isAnalyzing || (!useAmountInput && Math.abs(totalValue - 100) > 0.01)}
                   >
                     {isAnalyzing ? "분석 중..." : "포트폴리오 분석"}
@@ -396,16 +396,16 @@ export default function PortfolioInput() {
 
           {/* Sidebar - Ticker List */}
           <div className="lg:col-span-1">
-            <Card className="h-full max-h-[800px] flex flex-col sticky top-8">
+            <Card className="h-full max-h-[800px] flex flex-col sticky top-8 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Available Companies</CardTitle>
+                <CardTitle>사용 가능한 종목</CardTitle>
                 <CardDescription>
-                  Drag and drop to add to portfolio
+                  드래그 앤 드롭으로 포트폴리오에 추가
                 </CardDescription>
                 <div className="relative mt-2">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by ticker or name..."
+                    placeholder="티커 또는 회사명으로 검색..."
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -422,7 +422,7 @@ export default function PortfolioInput() {
                             <div
                               draggable
                               onDragStart={(e) => handleDragStart(e, company.ticker)}
-                              className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent cursor-grab active:cursor-grabbing transition-colors group"
+                              className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 hover:shadow-md cursor-grab active:cursor-grabbing transition-all group"
                             >
                               <div className="flex flex-col items-start overflow-hidden">
                                 <span className="font-bold font-mono text-sm">{company.ticker}</span>
@@ -441,7 +441,7 @@ export default function PortfolioInput() {
                               </div>
                               {company.founded && (
                                 <div className="text-xs text-muted-foreground">
-                                  Founded: {company.founded}
+                                  설립: {company.founded}
                                 </div>
                               )}
                               <div className="text-xs line-clamp-6 pt-2 border-t mt-2">
@@ -454,7 +454,7 @@ export default function PortfolioInput() {
                     ))}
                     {filteredCompanies.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground">
-                        No companies found
+                        종목을 찾을 수 없습니다
                       </div>
                     )}
                   </div>
