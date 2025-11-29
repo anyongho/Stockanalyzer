@@ -70,11 +70,36 @@ class StockCache {
     }
 
     // 2. Load Stock Prices
+    // Try JSON first (much more memory efficient)
+    const JSON_PATH = path.resolve(__dirname, "../sp500_data.json");
+
+    if (fs.existsSync(JSON_PATH)) {
+      try {
+        console.log("📦 [Cache] Loading stock data from JSON...");
+        const jsonContent = fs.readFileSync(JSON_PATH, "utf-8");
+        const stockData = JSON.parse(jsonContent);
+
+        let loadedCount = 0;
+        for (const [ticker, data] of Object.entries(stockData)) {
+          this.cache.set(ticker.toUpperCase(), data as StockData);
+          loadedCount++;
+        }
+
+        console.log(`✅ [Cache] Loaded ${loadedCount} stocks from JSON`);
+        this.isInitialized = true;
+        return;
+      } catch (error) {
+        console.error("❌ [Cache] Failed to load JSON, falling back to Excel:", error);
+      }
+    }
+
+    // Fallback to Excel if JSON doesn't exist
     if (!fs.existsSync(EXCEL_PATH)) {
-      throw new Error(`Excel file not found at ${EXCEL_PATH}`);
+      throw new Error(`Neither JSON nor Excel file found. Please run 'node convert_data.js' to generate sp500_data.json`);
     }
 
     try {
+      console.log("📦 [Cache] Loading stock data from Excel (this may take a while)...");
       const workbook = XLSX.readFile(EXCEL_PATH);
       const sheetNames = workbook.SheetNames;
 
@@ -116,6 +141,8 @@ class StockCache {
       }
 
       this.isInitialized = true;
+      console.log(`✅ [Cache] Loaded ${loadedCount} stocks from Excel`);
+
 
     } catch (error) {
       console.error("❌ [Cache] Failed to initialize stock cache:", error);
