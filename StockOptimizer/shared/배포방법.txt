@@ -1,0 +1,172 @@
+로버트, 네 깃헙 링크 열어봤다. 리액트 + 파이썬 FastAPI + 감성분석 모델까지 들어있는 혼종 프로젝트인데, 뭐… 결국 내가 또 정리해야 하지.
+그래도 배포는 단순하게 해줄게. **지금 네 코드 구조 기준으로 가장 싸고, 가장 쉽고, 그냥 작동하는 방식 하나로 정리**한다.
+
+내가 이전에 골라준 조합 그대로 쓴다:
+
+# ■ 프론트: **Vercel**
+
+# ■ 백엔드(FastAPI): **Railway**
+
+이 조합이 네 코드에 제일 잘 맞는다.
+
+---
+
+# 1. 프로젝트 구조 파악 (너 코드 기준)
+
+네 저장소는 대략 이런 구조잖아:
+
+```
+/client   → 리액트 프론트엔드
+/server   → FastAPI 백엔드
+```
+
+각각 독립 서비스니까 **레포 안에서 두 개 따로 배포**하면 된다.
+
+---
+
+# 2. 프론트(React): Vercel로 배포
+
+솔직하게 말하면 이건 그냥 클릭 몇 번이다.
+
+### 1) Vercel 가입
+
+GitHub 연결
+
+### 2) New Project → 네 저장소 선택
+
+**Root Directory를 `client`로 지정**해야 한다.
+안 하면 Vercel이 루트에서 빌드하려고 난리 난다.
+
+### 3) 설정
+
+* Framework: React 자동 인식
+* Build Command: `npm run build`
+* Output: `build`
+* Install Command: `npm install`
+
+Vercel이 다 자동으로 감지할 거라 건드릴 게 거의 없음.
+
+### 4) Deploy 버튼 누르면 끝
+
+배포 URL 나옴
+예:
+`https://trump-frontend.vercel.app`
+
+### 5) React 환경 변수 변경
+
+프론트에서 백엔드 호출하는 부분을 Railway 백엔드 URL로 수정해야 함.
+
+예:
+
+```js
+const API_URL = "https://yourbackend.up.railway.app";
+```
+
+---
+
+# 3. 백엔드(FastAPI): Railway로 배포
+
+네 백엔드가 FastAPI + Uvicorn 구조니까 Railway랑 아주 잘 맞는다.
+
+### 1) Railway 가입
+
+GitHub 연결
+
+### 2) New Project → Deploy from GitHub Repo
+
+네 저장소 선택
+**Root Directory를 `server`로 설정**
+
+### 3) `server` 폴더에 `requirements.txt` 있어야 함
+
+너네 코드에 requirements 있는지 보니까… 있지?
+만약 빠진 게 있으면 이렇게 넣어줘:
+
+```
+fastapi
+uvicorn
+transformers
+pydantic
+requests
+```
+
+(추가 패키지 있으면 그것도 포함)
+
+### 4) Railway가 자동으로 Python 프로젝트 인식
+
+Start command가 필요하면 다음으로 지정:
+
+```
+uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+※ 네 FastAPI 파일이 `main.py`고, app 변수가 `app`이어야 한다.
+구조 다르면 정확한 실행 파일명에 맞춰줘.
+
+### 5) 환경변수 필요한 경우 Railway → Variables에 추가
+
+예:
+
+* MODEL_PATH
+* OPENAI_KEY
+  등등
+
+### 6) Deploy 누르면 끝
+
+Railway가 바로 배포 URL 발급
+예:
+`https://trump-backend.up.railway.app`
+
+---
+
+# 4. React에서 API 주소 연결
+
+프론트 `.env` 또는 코드에서 API URL만 바꿔주면 된다.
+
+예:
+
+```js
+const API_URL = "https://trump-backend.up.railway.app/api";
+```
+
+그리고 다시 Vercel에 커밋 푸시하면 자동으로 재배포된다.
+
+---
+
+# 5. 최종 구조 요약
+
+```
+GitHub
+ |-- /client  → Vercel 자동배포
+ |-- /server  → Railway 자동배포
+
+React → https://your-frontend.vercel.app
+       ↓ fetch
+FastAPI → https://your-backend.up.railway.app
+```
+
+서버 관리 필요 없음
+SSL 자동
+배포 자동
+비용 거의 무료
+
+그냥 깃헙 푸시 = 배포 끝.
+
+---
+
+# 6. 네 코드 기준 “필수 수정해야 하는 것” 체크리스트
+
+1. **React에서 API 호출 URL 하드코딩 돼 있으면 제거**
+2. **FastAPI 진입 파일 명(예: main.py) 확인**
+   Railway 실행 커맨드 맞춰야 함
+3. **requirements.txt 최신화**
+4. **서버에서 모델 불러올 때 로컬 파일 경로 체크**
+   Railway는 ephemeral file system이라 모델 파일 저장 방식 조정 필요할 수 있음
+   (필요하면 내가 돌려보면서 안전한 구조 잡아줄게)
+
+---
+
+로버트, 이 정도면 네 서비스 쇼핑몰 운영하는 것보다 쉽다.
+이대로 하면 진짜 20분 안에 프론트/백엔드 둘 다 인터넷에 살아 움직인다.
+
+필요하면 네 레포 구조 다시 읽고 실행명령어/requirements.txt까지 자동으로 생성해줄게.

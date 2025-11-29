@@ -189,8 +189,8 @@ export default function OptimizationResults() {
           <p className="text-muted-foreground">
             {
               portfolioInput.riskTolerance === 'conservative' ? '보수적' :
-              portfolioInput.riskTolerance === 'moderate' ? '중도적' :
-              '공격적'
+                portfolioInput.riskTolerance === 'moderate' ? '중도적' :
+                  '공격적'
             } 위험 선호도 및 {portfolioInput.targetReturn}% 목표수익률로 최적화됨
           </p>
         </div>
@@ -652,119 +652,119 @@ export default function OptimizationResults() {
           </CardContent>
         </Card>
 
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-primary" />
-                      포트폴리오 시뮬레이션
-                    </CardTitle>
-                    <CardDescription>
-                      몬테카를로 시뮬레이션을 통해 생성된 포트폴리오들의 위험-수익 분포입니다.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={450}>
-                      <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
-                        <defs>
-                          <linearGradient id="frontierGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}></stop>
-                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}></stop>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="hsl(var(--border))"
-                          opacity={0.2}
-                          vertical={false}
-                        />
-                        <XAxis
-                          type="number"
-                          dataKey="volatility"
-                          name="Volatility"
-                          unit="%"
-                          stroke="hsl(var(--foreground))"
-                          fontSize={13}
-                          fontWeight={500}
-                          tickLine={false}
-                          axisLine={{ stroke: 'hsl(var(--border))' }}
-                          label={{
-                            value: "Volatility (%)",
-                            position: "insideBottom",
-                            offset: -15,
-                            style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
-                          }}
-                        />
-                        <YAxis
-                          type="number"
-                          dataKey="return"
-                          name="Return"
-                          unit="%"
-                          stroke="hsl(var(--foreground))"
-                          fontSize={13}
-                          fontWeight={500}
-                          tickLine={false}
-                          axisLine={{ stroke: 'hsl(var(--border))' }}
-                          label={{
-                            value: "Annual Return (%)",
-                            angle: -90,
-                            position: "insideLeft",
-                            style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
-                          }}
-                        />
-                        <Tooltip
-                          cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))", strokeWidth: 1.5 }}
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              let label = "시뮬레이션 포트폴리오";
-                              let bgColor = "bg-background";
-                              let borderColor = "border-border";
-        
-                              if (data.isCurrent) {
-                                label = "Current Portfolio";
-                                borderColor = "border-red-500";
-                              } else if (data.isOptimal) {
-                                label = "Optimized Portfolio";
-                                borderColor = "border-green-500";
-                              } else if (data.isSectorCompliant) {
-                                label = "Sector Balanced";
-                                borderColor = "border-blue-500";
-                              }
-        
-                              return (
-                                <div className={`rounded-xl border-2 ${borderColor} ${bgColor} p-4 shadow-xl backdrop-blur-sm bg-opacity-95`}>
-                                  <div className="font-bold mb-2 text-sm">{label}</div>
-                                  <div className="space-y-1.5 text-sm">
-                                    <div className="flex justify-between gap-4">
-                                      <span className="text-muted-foreground">Return:</span>
-                                      <span className="font-mono font-semibold text-green-600 dark:text-green-400">
-                                        {data.return.toFixed(2)}%
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between gap-4">
-                                      <span className="text-muted-foreground">Volatility:</span>
-                                      <span className="font-mono font-semibold text-orange-600 dark:text-orange-400">
-                                        {data.volatility.toFixed(2)}%
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Scatter
-                          name="시뮬레이션 포트폴리오"
-                          data={result.efficientFrontier.filter(p => !p.isCurrent && !p.isOptimal && !p.isSectorCompliant)}
-                          fill="url(#frontierGradient)"
-                          opacity={0.8}
-                          shape="circle"
-                        />                <Scatter
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              포트폴리오 시뮬레이션
+            </CardTitle>
+            <CardDescription>
+              몬테카를로 시뮬레이션을 통해 생성된 포트폴리오들의 위험-수익 분포입니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={450}>
+              <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+                <defs>
+                  <linearGradient id="frontierGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}></stop>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}></stop>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                  opacity={0.2}
+                  vertical={false}
+                />
+                <XAxis
+                  type="number"
+                  dataKey="volatility"
+                  name="Volatility"
+                  unit="%"
+                  stroke="hsl(var(--foreground))"
+                  fontSize={13}
+                  fontWeight={500}
+                  tickLine={false}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  label={{
+                    value: "Volatility (%)",
+                    position: "insideBottom",
+                    offset: -15,
+                    style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
+                  }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="return"
+                  name="Return"
+                  unit="%"
+                  stroke="hsl(var(--foreground))"
+                  fontSize={13}
+                  fontWeight={500}
+                  tickLine={false}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  label={{
+                    value: "Annual Return (%)",
+                    angle: -90,
+                    position: "insideLeft",
+                    style: { fill: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600 }
+                  }}
+                />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))", strokeWidth: 1.5 }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      let label = "시뮬레이션 포트폴리오";
+                      let bgColor = "bg-background";
+                      let borderColor = "border-border";
+
+                      if (data.isCurrent) {
+                        label = "Current Portfolio";
+                        borderColor = "border-red-500";
+                      } else if (data.isOptimal) {
+                        label = "Optimized Portfolio";
+                        borderColor = "border-green-500";
+                      } else if (data.isSectorCompliant) {
+                        label = "Sector Balanced";
+                        borderColor = "border-blue-500";
+                      }
+
+                      return (
+                        <div className={`rounded-xl border-2 ${borderColor} ${bgColor} p-4 shadow-xl backdrop-blur-sm bg-opacity-95`}>
+                          <div className="font-bold mb-2 text-sm">{label}</div>
+                          <div className="space-y-1.5 text-sm">
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Return:</span>
+                              <span className="font-mono font-semibold text-green-600 dark:text-green-400">
+                                {data.return.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-4">
+                              <span className="text-muted-foreground">Volatility:</span>
+                              <span className="font-mono font-semibold text-orange-600 dark:text-orange-400">
+                                {data.volatility.toFixed(2)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Scatter
+                  name="시뮬레이션 포트폴리오"
+                  data={result.efficientFrontier.filter(p => !p.isCurrent && !p.isOptimal && !p.isSectorCompliant)}
+                  fill="url(#frontierGradient)"
+                  opacity={0.8}
+                  shape="circle"
+                />                <Scatter
                   name="Current"
                   data={result.efficientFrontier.filter(p => p.isCurrent)}
                   fill="#ef4444"
-                  shape={(props) => {
+                  shape={(props: any) => {
                     const { cx, cy } = props;
                     return (
                       <g>
@@ -778,7 +778,7 @@ export default function OptimizationResults() {
                   name="Sector Balanced"
                   data={result.efficientFrontier.filter(p => p.isSectorCompliant)}
                   fill="#3b82f6"
-                  shape={(props) => {
+                  shape={(props: any) => {
                     const { cx, cy } = props;
                     return (
                       <g>
@@ -797,7 +797,7 @@ export default function OptimizationResults() {
                   name="Optimized"
                   data={result.efficientFrontier.filter(p => p.isOptimal)}
                   fill="#22c55e"
-                  shape={(props) => {
+                  shape={(props: any) => {
                     const { cx, cy } = props;
                     return (
                       <g>
