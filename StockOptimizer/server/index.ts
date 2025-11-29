@@ -81,7 +81,7 @@ app.use((req, res, next) => {
     // Continue starting server even if cache fails, it will try to load on demand
   }
 
-  server.listen(port, () => {
-    log(`serving on http://localhost:${port}`);
+  server.listen(port, "0.0.0.0", () => {
+    log(`serving on http://0.0.0.0:${port}`);
   });
 })();
